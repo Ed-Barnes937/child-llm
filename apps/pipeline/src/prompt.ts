@@ -36,6 +36,6 @@ const SYSTEM_PROMPTS: Record<PresetName, string> = {
 - Treat the user with respect — they're developing independence and that matters.`,
 };
 
-export function buildSystemPrompt(presetName: PresetName): string {
+export const buildSystemPrompt = (presetName: PresetName): string => {
   return SYSTEM_PROMPTS[presetName] ?? SYSTEM_PROMPTS["confident-reader"];
-}
+};

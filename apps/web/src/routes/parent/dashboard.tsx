@@ -11,17 +11,13 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { useChildrenByParent } from "@/queries/children";
 
-export const Route = createFileRoute("/parent/dashboard")({
-  component: DashboardPage,
-});
-
 const PRESET_LABELS: Record<string, string> = {
   "early-learner": "Early learner",
   "confident-reader": "Confident reader",
   "independent-explorer": "Independent explorer",
 };
 
-function DashboardPage() {
+const DashboardPage = () => {
   const navigate = useNavigate();
   const { data: session, isPending } = authClient.useSession();
   const { data: kids, isLoading: loadingKids } = useChildrenByParent(
@@ -104,4 +100,8 @@ function DashboardPage() {
       </div>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/parent/dashboard")({
+  component: DashboardPage,
+});

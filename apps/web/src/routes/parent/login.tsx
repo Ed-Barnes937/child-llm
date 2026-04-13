@@ -12,18 +12,14 @@ import {
 } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
 
-export const Route = createFileRoute("/parent/login")({
-  component: LoginPage,
-});
-
-function LoginPage() {
+const LoginPage = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -40,7 +36,7 @@ function LoginPage() {
     }
 
     navigate({ to: "/parent/dashboard" });
-  }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
@@ -97,4 +93,8 @@ function LoginPage() {
       </Card>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/parent/login")({
+  component: LoginPage,
+});

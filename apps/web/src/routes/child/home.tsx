@@ -3,11 +3,7 @@ import { useEffect, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { getChildSession, clearChildSession } from "@/lib/child-session";
 
-export const Route = createFileRoute("/child/home")({
-  component: ChildHomePage,
-});
-
-function ChildHomePage() {
+const ChildHomePage = () => {
   const navigate = useNavigate();
   const [session] = useState(() => getChildSession());
 
@@ -19,10 +15,10 @@ function ChildHomePage() {
 
   const childName = session?.displayName ?? "";
 
-  function handleLogout() {
+  const handleLogout = () => {
     clearChildSession();
     navigate({ to: "/" });
-  }
+  };
 
   return (
     <div className="mx-auto flex min-h-screen max-w-lg flex-col px-4 py-8">
@@ -46,4 +42,8 @@ function ChildHomePage() {
       </div>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/child/home")({
+  component: ChildHomePage,
+});

@@ -13,20 +13,7 @@ import "../styles.css";
 
 const queryClient = new QueryClient();
 
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Child Safe LLM" },
-    ],
-  }),
-  component: RootComponent,
-  errorComponent: RootErrorComponent,
-  notFoundComponent: NotFoundComponent,
-});
-
-function RootComponent() {
+const RootComponent = () => {
   return (
     <RootDocument>
       <QueryClientProvider client={queryClient}>
@@ -35,9 +22,9 @@ function RootComponent() {
       </QueryClientProvider>
     </RootDocument>
   );
-}
+};
 
-function RootErrorComponent({ error, reset }: ErrorComponentProps) {
+const RootErrorComponent = ({ error, reset }: ErrorComponentProps) => {
   return (
     <RootDocument>
       <div className="flex min-h-screen items-center justify-center px-4">
@@ -63,9 +50,9 @@ function RootErrorComponent({ error, reset }: ErrorComponentProps) {
       </div>
     </RootDocument>
   );
-}
+};
 
-function NotFoundComponent() {
+const NotFoundComponent = () => {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md space-y-4 text-center">
@@ -79,9 +66,9 @@ function NotFoundComponent() {
       </div>
     </div>
   );
-}
+};
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+const RootDocument = ({ children }: { children: React.ReactNode }) => {
   return (
     <html lang="en">
       <head>
@@ -93,4 +80,17 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </body>
     </html>
   );
-}
+};
+
+export const Route = createRootRoute({
+  head: () => ({
+    meta: [
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { title: "Child Safe LLM" },
+    ],
+  }),
+  component: RootComponent,
+  errorComponent: RootErrorComponent,
+  notFoundComponent: NotFoundComponent,
+});

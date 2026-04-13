@@ -46,19 +46,19 @@ const PRESET_DEFAULTS: Record<
   },
 };
 
-function generateUsername(displayName: string): string {
+const generateUsername = (displayName: string): string => {
   const base = displayName
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "")
     .slice(0, 10);
   const suffix = Math.floor(1000 + Math.random() * 9000);
   return `${base}${suffix}`;
-}
+};
 
-function getDb() {
+const getDb = () => {
   const sql = postgres(process.env.DATABASE_URL!);
   return drizzle(sql);
-}
+};
 
 export const createChild = createServerFn({ method: "POST" })
   .inputValidator(

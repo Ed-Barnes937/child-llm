@@ -12,11 +12,7 @@ import {
 } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
 
-export const Route = createFileRoute("/parent/register")({
-  component: RegisterPage,
-});
-
-function RegisterPage() {
+const RegisterPage = () => {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -25,7 +21,7 @@ function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -53,7 +49,7 @@ function RegisterPage() {
     }
 
     navigate({ to: "/parent/onboarding" });
-  }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
@@ -132,4 +128,8 @@ function RegisterPage() {
       </Card>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/parent/register")({
+  component: RegisterPage,
+});

@@ -1,6 +1,6 @@
 import { loadEnv, type Plugin } from "vite";
 
-export function serverMiddleware(): Plugin {
+export const serverMiddleware = (): Plugin => {
   return {
     name: "server-middleware",
     configureServer(server) {
@@ -54,4 +54,4 @@ export function serverMiddleware(): Plugin {
       });
     },
   };
-}
+};

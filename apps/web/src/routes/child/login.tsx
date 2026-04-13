@@ -19,17 +19,13 @@ import {
 import { setChildSession } from "@/lib/child-session";
 import { useChildrenByDevice } from "@/queries/children";
 
-export const Route = createFileRoute("/child/login")({
-  component: ChildLoginPage,
-});
-
 interface ChildProfile {
   id: string;
   displayName: string;
   presetName: string;
 }
 
-function ChildLoginPage() {
+const ChildLoginPage = () => {
   const navigate = useNavigate();
   const [deviceToken, setDeviceTokenState] = useState<string | null>(() =>
     getDeviceToken(),
@@ -60,14 +56,14 @@ function ChildLoginPage() {
       ? "password"
       : "profiles";
 
-  function handleSelectChild(child: ChildProfile) {
+  const handleSelectChild = (child: ChildProfile) => {
     setSelectedChild(child);
     setPin("");
     setError("");
     setModeOverride("pin");
-  }
+  };
 
-  async function handlePinSubmit(e: React.FormEvent) {
+  const handlePinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedChild || !deviceToken) return;
     setError("");
@@ -87,9 +83,9 @@ function ChildLoginPage() {
       setChildSession(result.child);
       navigate({ to: "/child/home" });
     }
-  }
+  };
 
-  async function handlePasswordSubmit(e: React.FormEvent) {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -112,7 +108,7 @@ function ChildLoginPage() {
       setChildSession(result.child);
       navigate({ to: "/child/home" });
     }
-  }
+  };
 
   if (loadingProfiles) {
     return (
@@ -262,4 +258,8 @@ function ChildLoginPage() {
       </Card>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/child/login")({
+  component: ChildLoginPage,
+});

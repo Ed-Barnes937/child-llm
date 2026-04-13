@@ -8,16 +8,12 @@ import { Input } from "@/components/ui/input";
 import { getChildSession } from "@/lib/child-session";
 import { streamChat } from "@/server/chat";
 
-export const Route = createFileRoute("/child/chat/new")({
-  component: ChatPage,
-});
-
 interface Message {
   role: "child" | "ai";
   content: string;
 }
 
-function ChatPage() {
+const ChatPage = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -103,10 +99,10 @@ function ChatPage() {
     [messages, streaming],
   );
 
-  function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendMessage(input);
-  }
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -177,4 +173,8 @@ function ChatPage() {
       </div>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/child/chat/new")({
+  component: ChatPage,
+});

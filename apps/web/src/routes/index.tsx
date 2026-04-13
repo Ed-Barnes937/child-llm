@@ -1,11 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { buttonVariants } from "@/components/ui/button";
 
-export const Route = createFileRoute("/")({
-  component: LandingPage,
-});
-
-function LandingPage() {
+const LandingPage = () => {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-8 px-4">
       <div className="flex flex-col items-center gap-2 text-center">
@@ -45,4 +41,8 @@ function LandingPage() {
       </p>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/")({
+  component: LandingPage,
+});

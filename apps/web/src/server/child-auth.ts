@@ -5,10 +5,10 @@ import { children, devices } from "@child-safe-llm/db";
 import { eq } from "drizzle-orm";
 import type { PresetName } from "@child-safe-llm/shared";
 
-function getDb() {
+const getDb = () => {
   const sql = postgres(process.env.DATABASE_URL!);
   return drizzle(sql);
-}
+};
 
 /**
  * Login with username + password (new/own device).

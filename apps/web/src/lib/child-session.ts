@@ -10,7 +10,7 @@ export interface ChildSession {
   parentId: string;
 }
 
-export function getChildSession(): ChildSession | null {
+export const getChildSession = (): ChildSession | null => {
   if (typeof window === "undefined") return null;
   const stored = localStorage.getItem(CHILD_SESSION_KEY);
   if (!stored) return null;
@@ -19,12 +19,12 @@ export function getChildSession(): ChildSession | null {
   } catch {
     return null;
   }
-}
+};
 
-export function setChildSession(session: ChildSession): void {
+export const setChildSession = (session: ChildSession): void => {
   localStorage.setItem(CHILD_SESSION_KEY, JSON.stringify(session));
-}
+};
 
-export function clearChildSession(): void {
+export const clearChildSession = (): void => {
   localStorage.removeItem(CHILD_SESSION_KEY);
-}
+};

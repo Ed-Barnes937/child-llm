@@ -14,10 +14,6 @@ import { authClient } from "@/lib/auth-client";
 import { useCreateChild } from "@/queries/children";
 import type { PresetName } from "@child-safe-llm/shared";
 
-export const Route = createFileRoute("/parent/onboarding")({
-  component: OnboardingPage,
-});
-
 const PRESETS: { name: PresetName; label: string; description: string }[] = [
   {
     name: "early-learner",
@@ -39,7 +35,7 @@ const PRESETS: { name: PresetName; label: string; description: string }[] = [
   },
 ];
 
-function OnboardingPage() {
+const OnboardingPage = () => {
   const navigate = useNavigate();
   const { data: session, isPending } = authClient.useSession();
   const [displayName, setDisplayName] = useState("");
@@ -67,7 +63,7 @@ function OnboardingPage() {
 
   if (!session) return null;
 
-  function handleSubmit(e: React.FormEvent) {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
@@ -93,7 +89,7 @@ function OnboardingPage() {
           setError("Failed to create child account. Please try again."),
       },
     );
-  }
+  };
 
   if (result) {
     return (
@@ -214,4 +210,8 @@ function OnboardingPage() {
       </Card>
     </div>
   );
-}
+};
+
+export const Route = createFileRoute("/parent/onboarding")({
+  component: OnboardingPage,
+});
