@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r typecheck",
+    "test:e2e": "pnpm --filter @child-safe-llm/web test:e2e",
     "db:generate": "pnpm --filter @child-safe-llm/db generate",
     "db:migrate": "pnpm --filter @child-safe-llm/db migrate",
     "db:studio": "pnpm --filter @child-safe-llm/db studio",

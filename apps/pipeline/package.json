@@ -11,8 +11,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@child-safe-llm/shared": "workspace:*",
     "@hono/node-server": "^1.19.13",
-    "hono": "^4.12.12"
+    "hono": "^4.12.12",
+    "openai": "^6.34.0"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
