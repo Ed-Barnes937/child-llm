@@ -1,1 +1,27 @@
 .claude/ideas/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.output/
+.vinxi/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Docker
+docker-compose.override.yml
