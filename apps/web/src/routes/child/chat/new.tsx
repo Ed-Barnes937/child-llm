@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getChildSession } from "@/lib/child-session";
-import { streamChat } from "@/server/chat";
+import { chatApi } from "@/api/chat";
 
 interface Message {
   role: "child" | "ai";
@@ -47,15 +47,13 @@ const ChatPage = () => {
       setMessages([...newMessages, { role: "ai", content: "" }]);
 
       try {
-        const stream = await streamChat({
-          data: {
-            message: text,
-            presetName: childSession.current?.presetName ?? "confident-reader",
-            history: newMessages.map((m) => ({
-              role: m.role === "child" ? "user" : "assistant",
-              content: m.content,
-            })),
-          },
+        const stream = chatApi.stream({
+          message: text,
+          presetName: childSession.current?.presetName ?? "confident-reader",
+          history: newMessages.map((m) => ({
+            role: m.role === "child" ? "user" : "assistant",
+            content: m.content,
+          })),
         });
 
         for await (const chunk of stream) {

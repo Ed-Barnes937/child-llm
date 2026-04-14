@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { authClient } from "@/lib/auth-client";
+import { useParentSession } from "@/queries/parent-auth";
 import { useCreateChild } from "@/queries/children";
 import type { PresetName } from "@child-safe-llm/shared";
 
@@ -37,7 +37,7 @@ const PRESETS: { name: PresetName; label: string; description: string }[] = [
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending } = useParentSession();
   const [displayName, setDisplayName] = useState("");
   const [selectedPreset, setSelectedPreset] =
     useState<PresetName>("confident-reader");

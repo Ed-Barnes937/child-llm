@@ -10,7 +10,9 @@
     "lint": "echo 'web lint placeholder'",
     "typecheck": "tsc --noEmit",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "test:ct": "playwright test -c playwright-ct.config.ts",
+    "test:ct:ui": "playwright test -c playwright-ct.config.ts --ui"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",
@@ -39,6 +41,7 @@
     "vite": "^8.0.8"
   },
   "devDependencies": {
+    "@playwright/experimental-ct-react": "^1.59.1",
     "@playwright/test": "^1.59.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
