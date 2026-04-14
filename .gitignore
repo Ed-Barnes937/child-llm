@@ -8,6 +8,11 @@ dist/
 .output/
 .vinxi/
 
+# Playwright
+playwright/.cache/
+test-results/
+playwright-report/
+
 # Environment
 .env
 .env.*
