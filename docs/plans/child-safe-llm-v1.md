@@ -94,6 +94,8 @@ This phase proves the entire architecture works: monorepo, both services, DB, au
 - [ ] Dockerfiles for both services
 - [ ] Deploy to Fly.io London (app + pipeline + Postgres)
 - [ ] Route protection — parent routes need parent session, child routes need child session
+- [ ] Set up Playwright with test helpers (DB seeding/teardown, auth helpers)
+- [ ] Playwright tests: parent signup → login, create child via onboarding, child login (PIN + password), send message + receive streamed response
 
 ### Acceptance criteria
 

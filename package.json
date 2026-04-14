@@ -15,17 +15,24 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r typecheck",
+    "test:e2e": "pnpm --filter @child-safe-llm/web test:e2e",
     "db:generate": "pnpm --filter @child-safe-llm/db generate",
     "db:migrate": "pnpm --filter @child-safe-llm/db migrate",
     "db:studio": "pnpm --filter @child-safe-llm/db studio",
     "deploy:web": "fly deploy -c apps/web/fly.toml",
-    "deploy:pipeline": "fly deploy -c apps/pipeline/fly.toml"
+    "deploy:pipeline": "fly deploy -c apps/pipeline/fly.toml",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*": "prettier --check --ignore-unknown"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint": "^10.2.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "prettier": "^3.8.2",
     "typescript": "^6.0.2",
     "typescript-eslint": "^8.58.1"

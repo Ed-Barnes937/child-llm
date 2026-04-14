@@ -91,5 +91,11 @@ All services hosted on Fly.io, London region (UK data residency).
 | Pipeline service | Hono (TypeScript) |
 | LLM provider | OpenRouter (GPT-4o-mini primary, GPT-4.1 nano validation) |
 | Hosting | Fly.io — all services in London region |
+| E2E testing | Playwright |
+
+### Testing
+- **E2E / Integration:** Playwright — browser-based tests for critical user flows. Runs against the full stack (both services + DB).
+- **Strategy:** Each phase includes Playwright tests for the flows it introduces. Tests cover the happy path and key edge cases (auth failures, empty states, error handling). Not aiming for full coverage — testing the flows that cross multiple layers (auth → DB, chat → pipeline → streaming) catches the highest-value bugs.
+- **CI:** Playwright tests run in GitHub Actions on PR alongside lint + typecheck.
 
 All decisions are light commitments — revisitable during implementation.

@@ -10,33 +10,128 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ParentRegisterRouteImport } from './routes/parent/register'
+import { Route as ParentOnboardingRouteImport } from './routes/parent/onboarding'
+import { Route as ParentLoginRouteImport } from './routes/parent/login'
+import { Route as ParentDashboardRouteImport } from './routes/parent/dashboard'
+import { Route as ChildLoginRouteImport } from './routes/child/login'
+import { Route as ChildHomeRouteImport } from './routes/child/home'
+import { Route as ChildChatNewRouteImport } from './routes/child/chat/new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ParentRegisterRoute = ParentRegisterRouteImport.update({
+  id: '/parent/register',
+  path: '/parent/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParentOnboardingRoute = ParentOnboardingRouteImport.update({
+  id: '/parent/onboarding',
+  path: '/parent/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParentLoginRoute = ParentLoginRouteImport.update({
+  id: '/parent/login',
+  path: '/parent/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParentDashboardRoute = ParentDashboardRouteImport.update({
+  id: '/parent/dashboard',
+  path: '/parent/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChildLoginRoute = ChildLoginRouteImport.update({
+  id: '/child/login',
+  path: '/child/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChildHomeRoute = ChildHomeRouteImport.update({
+  id: '/child/home',
+  path: '/child/home',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChildChatNewRoute = ChildChatNewRouteImport.update({
+  id: '/child/chat/new',
+  path: '/child/chat/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/child/home': typeof ChildHomeRoute
+  '/child/login': typeof ChildLoginRoute
+  '/parent/dashboard': typeof ParentDashboardRoute
+  '/parent/login': typeof ParentLoginRoute
+  '/parent/onboarding': typeof ParentOnboardingRoute
+  '/parent/register': typeof ParentRegisterRoute
+  '/child/chat/new': typeof ChildChatNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/child/home': typeof ChildHomeRoute
+  '/child/login': typeof ChildLoginRoute
+  '/parent/dashboard': typeof ParentDashboardRoute
+  '/parent/login': typeof ParentLoginRoute
+  '/parent/onboarding': typeof ParentOnboardingRoute
+  '/parent/register': typeof ParentRegisterRoute
+  '/child/chat/new': typeof ChildChatNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/child/home': typeof ChildHomeRoute
+  '/child/login': typeof ChildLoginRoute
+  '/parent/dashboard': typeof ParentDashboardRoute
+  '/parent/login': typeof ParentLoginRoute
+  '/parent/onboarding': typeof ParentOnboardingRoute
+  '/parent/register': typeof ParentRegisterRoute
+  '/child/chat/new': typeof ChildChatNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/child/home'
+    | '/child/login'
+    | '/parent/dashboard'
+    | '/parent/login'
+    | '/parent/onboarding'
+    | '/parent/register'
+    | '/child/chat/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/child/home'
+    | '/child/login'
+    | '/parent/dashboard'
+    | '/parent/login'
+    | '/parent/onboarding'
+    | '/parent/register'
+    | '/child/chat/new'
+  id:
+    | '__root__'
+    | '/'
+    | '/child/home'
+    | '/child/login'
+    | '/parent/dashboard'
+    | '/parent/login'
+    | '/parent/onboarding'
+    | '/parent/register'
+    | '/child/chat/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChildHomeRoute: typeof ChildHomeRoute
+  ChildLoginRoute: typeof ChildLoginRoute
+  ParentDashboardRoute: typeof ParentDashboardRoute
+  ParentLoginRoute: typeof ParentLoginRoute
+  ParentOnboardingRoute: typeof ParentOnboardingRoute
+  ParentRegisterRoute: typeof ParentRegisterRoute
+  ChildChatNewRoute: typeof ChildChatNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +143,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/parent/register': {
+      id: '/parent/register'
+      path: '/parent/register'
+      fullPath: '/parent/register'
+      preLoaderRoute: typeof ParentRegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parent/onboarding': {
+      id: '/parent/onboarding'
+      path: '/parent/onboarding'
+      fullPath: '/parent/onboarding'
+      preLoaderRoute: typeof ParentOnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parent/login': {
+      id: '/parent/login'
+      path: '/parent/login'
+      fullPath: '/parent/login'
+      preLoaderRoute: typeof ParentLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parent/dashboard': {
+      id: '/parent/dashboard'
+      path: '/parent/dashboard'
+      fullPath: '/parent/dashboard'
+      preLoaderRoute: typeof ParentDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/child/login': {
+      id: '/child/login'
+      path: '/child/login'
+      fullPath: '/child/login'
+      preLoaderRoute: typeof ChildLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/child/home': {
+      id: '/child/home'
+      path: '/child/home'
+      fullPath: '/child/home'
+      preLoaderRoute: typeof ChildHomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/child/chat/new': {
+      id: '/child/chat/new'
+      path: '/child/chat/new'
+      fullPath: '/child/chat/new'
+      preLoaderRoute: typeof ChildChatNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChildHomeRoute: ChildHomeRoute,
+  ChildLoginRoute: ChildLoginRoute,
+  ParentDashboardRoute: ParentDashboardRoute,
+  ParentLoginRoute: ParentLoginRoute,
+  ParentOnboardingRoute: ParentOnboardingRoute,
+  ParentRegisterRoute: ParentRegisterRoute,
+  ChildChatNewRoute: ChildChatNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

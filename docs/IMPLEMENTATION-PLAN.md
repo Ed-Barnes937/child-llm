@@ -17,7 +17,8 @@ Foundation. Nothing else works without this.
 - [ ] **0.6** Set up Tailwind CSS + Shadcn/ui in the TanStack Start app
 - [ ] **0.7** Dockerfiles for both services (TanStack Start app + Hono pipeline service)
 - [ ] **0.8** Fly.io setup — create app, deploy both services to London region, provision Postgres
-- [ ] **0.9** CI basics — GitHub Actions for lint + typecheck on PR (optional but recommended)
+- [ ] **0.9** CI basics — GitHub Actions for lint + typecheck on PR
+- [ ] **0.10** Set up Playwright — install, config, test helper for DB seeding/teardown, add to CI
 
 ---
 
@@ -39,6 +40,7 @@ The data model and parent authentication. Blocks everything else.
 - [ ] **1.5** Build parent login screen (S2) + registration screen (S4)
 - [ ] **1.6** Build child login screen (S3) — profile selector + PIN entry (known device), username + password (new device)
 - [ ] **1.7** Implement route protection — parent routes require parent session, child routes require child session
+- [ ] **1.8** Playwright tests: parent signup + login, create child via onboarding, child login (PIN + password), send message and receive streamed response
 
 ---
 
@@ -51,6 +53,7 @@ The parent creates their first child account and configures guardrails.
 - [ ] **2.4** Build onboarding step 3 (S7) — review & confirm. Show summary, allow editing, optional slider customisation.
 - [ ] **2.5** Implement preset + calibration storage — save all config to the database against the child account
 - [ ] **2.6** Build "add another child" flow — reuse onboarding steps from parent dashboard
+- [ ] **2.7** Playwright tests: calibration flow (complete + skip), slider adjustment changes chat behaviour, intent selection for restricted presets, output blocklist catches inappropriate content
 
 ---
 
@@ -68,6 +71,7 @@ The heart of the product. This is the Hono service that handles LLM calls with s
 - [ ] **3.9** Implement context anchoring — re-inject safety instructions every N messages in the conversation
 - [ ] **3.10** Implement service-to-service auth — API key check on all pipeline endpoints
 - [ ] **3.11** SSE streaming endpoint — TanStack Start app connects and streams tokens to the client
+- [ ] **3.12** Playwright tests: validation model blocks inappropriate response, escalated prompting triggers on sensitive topic, flag-and-forward returns safe fallback, context anchoring persists across long conversations
 
 ---
 
@@ -81,6 +85,7 @@ The core child-facing UI.
 - [ ] **4.5** Build intent selection screen (S21a) — visual cards for restricted presets. Wire up to skip/show based on child's preset config.
 - [ ] **4.6** Implement "Inspire me" — fetch a random topic suggestion (hardcoded pool initially + parent-seeded topics)
 - [ ] **4.7** Implement session limit warnings — track token/message/time usage, show inline warnings when approaching limits
+- [ ] **4.8** Playwright tests: new conversation + chat round trip, "report unsatisfactory answer" creates flag, intent selection flow, "Inspire me" generates and starts conversation, session limit warning appears
 
 ---
 
@@ -97,6 +102,7 @@ Store conversations, enable history, and handle retention.
 - [ ] **5.5** Implement auto-summarisation — when a conversation passes the retention window, generate a summary via LLM and store it
 - [ ] **5.6** Implement retention purge — cron/scheduled job to delete raw messages past the retention window, keeping only summaries
 - [ ] **5.7** Build conversation summary view (S13) — display summary for expired conversations, with delete button
+- [ ] **5.8** Playwright tests: messages persist across page reloads, conversation history shows previous chats, conversation continuation includes context, auto-summarisation generates summary after retention window
 
 ---
 
@@ -111,6 +117,7 @@ The parent's view into their children's activity.
 - [ ] **6.6** Build child settings screen (S9a) — preset selector, sliders, calibration answers, inspire me topics, intent categories, PIN management, data management
 - [ ] **6.7** Implement parent-seeded "Inspire me" topics — CRUD from child settings, surface in child's Inspire me pool
 - [ ] **6.8** Build app settings screen (S12) — notification preferences, display settings, legal links
+- [ ] **6.9** Playwright tests: dashboard shows per-child tabs with correct stats, flagged conversation list + detail view + mark as reviewed, add child from dashboard, add/remove "Inspire me" topics, child settings sliders persist
 
 ---
 
@@ -124,6 +131,7 @@ Subscription, trials, and account admin.
 - [ ] **7.5** Implement GDPR data export — generate downloadable export of all data for a child
 - [ ] **7.6** Implement account deletion — full data deletion flow with confirmation
 - [ ] **7.7** Implement transparent pricing page — show costs, justify pricing, no dark patterns
+- [ ] **7.8** Playwright tests: trial signup with card, usage limits enforced, upgrade/downgrade plan, cancel subscription, GDPR data export downloads, account deletion removes all data
 
 ---
 
@@ -135,6 +143,7 @@ Wire up the notification system for parents.
 - [ ] **8.3** Send notifications when a child hits their session limit
 - [ ] **8.4** Implement notification preferences — per child, per type, configurable from parent settings
 - [ ] **8.5** Implement flag review workflow — mark as reviewed, dismiss from dashboard
+- [ ] **8.6** Playwright tests: push notification triggered on flag, notification triggered on session limit, notification preferences respected
 
 ---
 
@@ -148,7 +157,8 @@ Get it ready for real users.
 - [ ] **9.5** Rate limiting and brute-force protection on PIN/password entry
 - [ ] **9.6** Encryption at rest confirmation — verify Fly.io Postgres encryption, TLS on all connections
 - [ ] **9.7** Privacy policy and terms of service pages
-- [ ] **9.8** End-to-end testing of critical flows (parent signup → onboarding → child login → chat → flag → parent review)
+- [ ] **9.8** Full regression pass — run all Playwright tests from earlier phases, fix regressions
+- [ ] **9.9** Playwright tests: PWA install flow, offline fallback, responsive breakpoints, rate limiting on PIN/password entry, multi-device flow (shared device + child's own device)
 
 ---
 
