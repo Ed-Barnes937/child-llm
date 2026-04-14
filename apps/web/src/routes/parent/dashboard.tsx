@@ -8,7 +8,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { authClient } from "@/lib/auth-client";
+import { parentAuth } from "@/api/parent-auth";
+import { useParentSession } from "@/queries/parent-auth";
 import { useChildrenByParent } from "@/queries/children";
 
 const PRESET_LABELS: Record<string, string> = {
@@ -19,7 +20,7 @@ const PRESET_LABELS: Record<string, string> = {
 
 const DashboardPage = () => {
   const navigate = useNavigate();
-  const { data: session, isPending } = authClient.useSession();
+  const { data: session, isPending } = useParentSession();
   const { data: kids, isLoading: loadingKids } = useChildrenByParent(
     session?.user?.id,
   );
@@ -48,7 +49,7 @@ const DashboardPage = () => {
           variant="outline"
           size="sm"
           onClick={async () => {
-            await authClient.signOut();
+            await parentAuth.signOut();
             navigate({ to: "/" });
           }}
         >

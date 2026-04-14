@@ -4,14 +4,14 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { getChildren, createChild } from "@/server/children";
-import { getChildrenForDevice } from "@/server/child-auth";
+import { childrenApi } from "@/api/children";
+import { childAuthApi } from "@/api/child-auth";
 import type { PresetName } from "@child-safe-llm/shared";
 
 export const childrenByParentOptions = (parentId: string | undefined) => {
   return queryOptions({
     queryKey: ["children", parentId],
-    queryFn: () => getChildren({ data: { parentId: parentId! } }),
+    queryFn: () => childrenApi.getByParent(parentId!),
     enabled: !!parentId,
   });
 };
@@ -23,7 +23,7 @@ export const useChildrenByParent = (parentId: string | undefined) => {
 export const childrenByDeviceOptions = (deviceToken: string | null) => {
   return queryOptions({
     queryKey: ["children", "device", deviceToken],
-    queryFn: () => getChildrenForDevice({ data: { deviceToken: deviceToken! } }),
+    queryFn: () => childAuthApi.getChildrenForDevice(deviceToken!),
     enabled: !!deviceToken,
   });
 };
@@ -41,7 +41,7 @@ export const useCreateChild = () => {
       displayName: string;
       presetName: PresetName;
       pin: string;
-    }) => createChild({ data }),
+    }) => childrenApi.create(data),
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["children", variables.parentId],

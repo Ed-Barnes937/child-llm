@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { authClient } from "@/lib/auth-client";
+import { parentAuth } from "@/api/parent-auth";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ const RegisterPage = () => {
     }
 
     setLoading(true);
-    const { error: signUpError } = await authClient.signUp.email({
+    const { error: signUpError } = await parentAuth.signUp({
       email,
       password,
       name,

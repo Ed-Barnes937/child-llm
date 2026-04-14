@@ -10,7 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { childLoginWithPassword, childLoginWithPin } from "@/server/child-auth";
+import { childAuthApi } from "@/api/child-auth";
 import {
   getDeviceToken,
   setDeviceToken,
@@ -69,17 +69,19 @@ const ChildLoginPage = () => {
     setError("");
     setLoading(true);
 
-    const result = await childLoginWithPin({
-      data: { childId: selectedChild.id, pin, deviceToken },
+    const result = await childAuthApi.loginWithPin({
+      childId: selectedChild.id,
+      pin,
+      deviceToken,
     });
 
-    if ("error" in result && result.error) {
+    if (result.error) {
       setError(result.error);
       setLoading(false);
       return;
     }
 
-    if ("child" in result && result.child) {
+    if (result.child) {
       setChildSession(result.child);
       navigate({ to: "/child/home" });
     }
@@ -92,17 +94,19 @@ const ChildLoginPage = () => {
 
     const token = deviceToken ?? generateDeviceToken();
 
-    const result = await childLoginWithPassword({
-      data: { username, password, deviceToken: token },
+    const result = await childAuthApi.loginWithPassword({
+      username,
+      password,
+      deviceToken: token,
     });
 
-    if ("error" in result && result.error) {
+    if (result.error) {
       setError(result.error);
       setLoading(false);
       return;
     }
 
-    if ("child" in result && result.child) {
+    if (result.child) {
       setDeviceToken(token);
       setDeviceTokenState(token);
       setChildSession(result.child);
