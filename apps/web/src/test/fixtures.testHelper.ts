@@ -15,10 +15,12 @@ export const test: TestType<
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   {}
 > = base.extend<IwftFixtures>({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   backendSimulator: async ({ page }, use) => {
     const simulator = new BackendSimulator();
     // Defer install — tests call simulator.install(page) after mount().
     // page.route() handlers only work reliably after CT mount.
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     await use(simulator);
   },
 });

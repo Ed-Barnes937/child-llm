@@ -42,7 +42,7 @@ test.describe("Child login", () => {
 
   test("child can log in with PIN on known device", async ({ mount, page, backendSimulator }) => {
     // Seed data first (before mount, so we know the child details)
-    const { parent, child } = seedParentAndChild(backendSimulator.db);
+    const { parent } = seedParentAndChild(backendSimulator.db);
 
     // Set up device token in localStorage BEFORE mount
     const deviceToken = "test-device-token-123";

@@ -211,6 +211,7 @@ export const createChildAuthRoutes = (db: BackendSimulatorDb): RouteDefinition<a
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createChatRoutes = (db: BackendSimulatorDb): RouteDefinition<any>[] => [
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   post("/chat/stream", (_req: HttpRequest) =>
     handleEndpointBehaviour(
       db.endpointBehaviourManager.getBehaviour(EndpointKey.CHAT_STREAM),
