@@ -11,10 +11,5 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
-  plugins: [
-    serverMiddleware(),
-    tanstackStart(),
-    react(),
-    tailwindcss(),
-  ],
+  plugins: [serverMiddleware(), tanstackStart(), react(), tailwindcss()],
 });

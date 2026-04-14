@@ -30,9 +30,9 @@ const ChildLoginPage = () => {
   const [deviceToken, setDeviceTokenState] = useState<string | null>(() =>
     getDeviceToken(),
   );
-  const [modeOverride, setModeOverride] = useState<
-    "pin" | "password" | null
-  >(null);
+  const [modeOverride, setModeOverride] = useState<"pin" | "password" | null>(
+    null,
+  );
   const [selectedChild, setSelectedChild] = useState<ChildProfile | null>(null);
 
   // PIN mode state

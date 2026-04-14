@@ -99,8 +99,7 @@ export const createChild = createServerFn({ method: "POST" })
     return {
       child: { id: child.id, username, displayName: child.displayName },
     };
-  },
-);
+  });
 
 export const getChildren = createServerFn({ method: "GET" })
   .inputValidator((d: { parentId: string }) => d)
@@ -118,5 +117,4 @@ export const getChildren = createServerFn({ method: "GET" })
       .where(eq(children.parentId, data.parentId));
 
     return result;
-  },
-);
+  });

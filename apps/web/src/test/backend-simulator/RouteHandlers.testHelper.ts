@@ -1,5 +1,9 @@
 import type { BackendSimulatorDb } from "./BackendSimulatorDb.testHelper";
-import type { RouteDefinition, HttpRequest, RouteResponse } from "./Route.testHelper";
+import type {
+  RouteDefinition,
+  HttpRequest,
+  RouteResponse,
+} from "./Route.testHelper";
 import { get, post } from "./Route.testHelper";
 import { EndpointKey } from "./Endpoint.testHelper";
 import { handleEndpointBehaviour } from "./EndpointBehaviourManager.testHelper";
@@ -10,54 +14,66 @@ const json = (data: unknown, status = 200): RouteResponse => ({
   body: JSON.stringify(data),
 });
 
-const extractSessionToken = (headers: Record<string, string>): string | null => {
+const extractSessionToken = (
+  headers: Record<string, string>,
+): string | null => {
   const cookie = headers["cookie"] ?? "";
   const match = cookie.match(/better-auth\.session_token=([^;]+)/);
   return match ? match[1] : null;
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const createAuthRoutes = (db: BackendSimulatorDb): RouteDefinition<any>[] => [
-  post("/sign-up/email", (req: HttpRequest<{ name: string; email: string; password: string }>) =>
-    handleEndpointBehaviour(
-      db.endpointBehaviourManager.getBehaviour(EndpointKey.AUTH_SIGN_UP),
-      () => {
-        const existing = db.findParentByEmail(req.body.email);
-        if (existing) return json({ message: "User already exists" }, 400);
+export const createAuthRoutes = (
+  db: BackendSimulatorDb,
+): RouteDefinition<any>[] => [
+  post(
+    "/sign-up/email",
+    (req: HttpRequest<{ name: string; email: string; password: string }>) =>
+      handleEndpointBehaviour(
+        db.endpointBehaviourManager.getBehaviour(EndpointKey.AUTH_SIGN_UP),
+        () => {
+          const existing = db.findParentByEmail(req.body.email);
+          if (existing) return json({ message: "User already exists" }, 400);
 
-        const parent = db.createParent(req.body);
-        const session = db.createSession(parent.id);
+          const parent = db.createParent(req.body);
+          const session = db.createSession(parent.id);
 
-        return {
-          status: 200,
-          headers: {
-            "Set-Cookie": `better-auth.session_token=${session.token}; Path=/; HttpOnly`,
-          },
-          body: JSON.stringify({ user: { id: parent.id, name: parent.name, email: parent.email } }),
-        };
-      },
-    ),
+          return {
+            status: 200,
+            headers: {
+              "Set-Cookie": `better-auth.session_token=${session.token}; Path=/; HttpOnly`,
+            },
+            body: JSON.stringify({
+              user: { id: parent.id, name: parent.name, email: parent.email },
+            }),
+          };
+        },
+      ),
   ),
 
-  post("/sign-in/email", (req: HttpRequest<{ email: string; password: string }>) =>
-    handleEndpointBehaviour(
-      db.endpointBehaviourManager.getBehaviour(EndpointKey.AUTH_SIGN_IN),
-      () => {
-        const parent = db.findParentByEmail(req.body.email);
-        if (!parent || parent.password !== req.body.password) {
-          return json({ message: "Invalid email or password." }, 401);
-        }
+  post(
+    "/sign-in/email",
+    (req: HttpRequest<{ email: string; password: string }>) =>
+      handleEndpointBehaviour(
+        db.endpointBehaviourManager.getBehaviour(EndpointKey.AUTH_SIGN_IN),
+        () => {
+          const parent = db.findParentByEmail(req.body.email);
+          if (!parent || parent.password !== req.body.password) {
+            return json({ message: "Invalid email or password." }, 401);
+          }
 
-        const session = db.createSession(parent.id);
-        return {
-          status: 200,
-          headers: {
-            "Set-Cookie": `better-auth.session_token=${session.token}; Path=/; HttpOnly`,
-          },
-          body: JSON.stringify({ user: { id: parent.id, name: parent.name, email: parent.email } }),
-        };
-      },
-    ),
+          const session = db.createSession(parent.id);
+          return {
+            status: 200,
+            headers: {
+              "Set-Cookie": `better-auth.session_token=${session.token}; Path=/; HttpOnly`,
+            },
+            body: JSON.stringify({
+              user: { id: parent.id, name: parent.name, email: parent.email },
+            }),
+          };
+        },
+      ),
   ),
 
   get("/get-session", (req: HttpRequest) =>
@@ -90,7 +106,8 @@ export const createAuthRoutes = (db: BackendSimulatorDb): RouteDefinition<any>[]
         return {
           status: 200,
           headers: {
-            "Set-Cookie": "better-auth.session_token=; Path=/; HttpOnly; Max-Age=0",
+            "Set-Cookie":
+              "better-auth.session_token=; Path=/; HttpOnly; Max-Age=0",
           },
           body: JSON.stringify({ success: true }),
         };
@@ -100,7 +117,9 @@ export const createAuthRoutes = (db: BackendSimulatorDb): RouteDefinition<any>[]
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const createChildrenRoutes = (db: BackendSimulatorDb): RouteDefinition<any>[] => [
+export const createChildrenRoutes = (
+  db: BackendSimulatorDb,
+): RouteDefinition<any>[] => [
   get("/children", (req: HttpRequest) =>
     handleEndpointBehaviour(
       db.endpointBehaviourManager.getBehaviour(EndpointKey.GET_CHILDREN),
@@ -122,7 +141,14 @@ export const createChildrenRoutes = (db: BackendSimulatorDb): RouteDefinition<an
 
   post(
     "/children",
-    (req: HttpRequest<{ parentId: string; displayName: string; presetName: PresetName; pin: string }>) =>
+    (
+      req: HttpRequest<{
+        parentId: string;
+        displayName: string;
+        presetName: PresetName;
+        pin: string;
+      }>,
+    ) =>
       handleEndpointBehaviour(
         db.endpointBehaviourManager.getBehaviour(EndpointKey.CREATE_CHILD),
         () => {
@@ -140,12 +166,22 @@ export const createChildrenRoutes = (db: BackendSimulatorDb): RouteDefinition<an
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const createChildAuthRoutes = (db: BackendSimulatorDb): RouteDefinition<any>[] => [
+export const createChildAuthRoutes = (
+  db: BackendSimulatorDb,
+): RouteDefinition<any>[] => [
   post(
     "/child-auth/login-password",
-    (req: HttpRequest<{ username: string; password: string; deviceToken: string }>) =>
+    (
+      req: HttpRequest<{
+        username: string;
+        password: string;
+        deviceToken: string;
+      }>,
+    ) =>
       handleEndpointBehaviour(
-        db.endpointBehaviourManager.getBehaviour(EndpointKey.CHILD_LOGIN_PASSWORD),
+        db.endpointBehaviourManager.getBehaviour(
+          EndpointKey.CHILD_LOGIN_PASSWORD,
+        ),
         () => {
           const child = db.findChildByUsername(req.body.username);
           if (!child || child.passwordHash !== req.body.password) {
@@ -175,7 +211,8 @@ export const createChildAuthRoutes = (db: BackendSimulatorDb): RouteDefinition<a
         () => {
           const child = db.findChildById(req.body.childId);
           if (!child) return json({ error: "Child not found." });
-          if (child.pinHash !== req.body.pin) return json({ error: "Incorrect PIN." });
+          if (child.pinHash !== req.body.pin)
+            return json({ error: "Incorrect PIN." });
 
           return json({
             child: {
@@ -210,7 +247,9 @@ export const createChildAuthRoutes = (db: BackendSimulatorDb): RouteDefinition<a
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const createChatRoutes = (db: BackendSimulatorDb): RouteDefinition<any>[] => [
+export const createChatRoutes = (
+  db: BackendSimulatorDb,
+): RouteDefinition<any>[] => [
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   post("/chat/stream", (_req: HttpRequest) =>
     handleEndpointBehaviour(

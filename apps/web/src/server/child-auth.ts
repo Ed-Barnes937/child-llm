@@ -58,8 +58,7 @@ export const childLoginWithPassword = createServerFn({ method: "POST" })
         parentId: child.parentId,
       },
     };
-  },
-);
+  });
 
 /**
  * Login with PIN (known/shared device).
@@ -95,8 +94,7 @@ export const childLoginWithPin = createServerFn({ method: "POST" })
         parentId: child.parentId,
       },
     };
-  },
-);
+  });
 
 /**
  * Get children for a device (by device token).
@@ -127,5 +125,4 @@ export const getChildrenForDevice = createServerFn({ method: "GET" })
       .where(eq(children.parentId, device.parentId));
 
     return { children: result };
-  },
-);
+  });

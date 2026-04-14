@@ -24,7 +24,9 @@ export const parentAuth = {
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      return { error: { message: body.message ?? "Invalid email or password." } };
+      return {
+        error: { message: body.message ?? "Invalid email or password." },
+      };
     }
     return { error: null };
   },

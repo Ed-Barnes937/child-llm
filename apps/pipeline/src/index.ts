@@ -38,7 +38,9 @@ app.post("/chat", (c) => {
     try {
       body = await c.req.json();
     } catch {
-      await sseStream.writeSSE({ data: JSON.stringify({ error: "Invalid request" }) });
+      await sseStream.writeSSE({
+        data: JSON.stringify({ error: "Invalid request" }),
+      });
       return;
     }
 

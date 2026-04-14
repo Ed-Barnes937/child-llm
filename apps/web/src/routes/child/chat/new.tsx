@@ -1,7 +1,4 @@
-import {
-  createFileRoute,
-  useNavigate,
-} from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -142,7 +139,8 @@ const ChatPage = () => {
                 }`}
               >
                 <p className="whitespace-pre-wrap text-sm">
-                  {msg.content || (streaming && i === messages.length - 1 ? "..." : "")}
+                  {msg.content ||
+                    (streaming && i === messages.length - 1 ? "..." : "")}
                 </p>
               </div>
             </div>
@@ -153,10 +151,7 @@ const ChatPage = () => {
 
       {/* Input */}
       <div className="border-border border-t px-4 py-3">
-        <form
-          onSubmit={handleSubmit}
-          className="mx-auto flex max-w-lg gap-2"
-        >
+        <form onSubmit={handleSubmit} className="mx-auto flex max-w-lg gap-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}

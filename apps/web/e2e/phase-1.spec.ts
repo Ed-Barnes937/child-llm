@@ -245,7 +245,12 @@ test.describe("Chat", () => {
     await page.waitForFunction(
       () => {
         const el = document.querySelector('[data-testid="ai-message"] p');
-        return el && el.textContent && el.textContent.length > 10 && el.textContent !== "...";
+        return (
+          el &&
+          el.textContent &&
+          el.textContent.length > 10 &&
+          el.textContent !== "..."
+        );
       },
       { timeout: 30000 },
     );

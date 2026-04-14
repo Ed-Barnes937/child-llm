@@ -18,11 +18,7 @@ export class BackendSimulator {
     const childAuthRoutes = createChildAuthRoutes(this.db);
     const chatRoutes = createChatRoutes(this.db);
 
-    const allRoutes = [
-      ...childrenRoutes,
-      ...childAuthRoutes,
-      ...chatRoutes,
-    ];
+    const allRoutes = [...childrenRoutes, ...childAuthRoutes, ...chatRoutes];
 
     // Register in specificity order: general first, then specific.
     // page.route() handlers fire LIFO, so /api/auth (registered last)

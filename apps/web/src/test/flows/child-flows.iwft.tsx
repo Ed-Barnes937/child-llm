@@ -21,7 +21,11 @@ const seedParentAndChild = (db: BackendSimulatorDb) => {
 };
 
 test.describe("Child login", () => {
-  test("child can log in with username + password on new device", async ({ mount, page, backendSimulator }) => {
+  test("child can log in with username + password on new device", async ({
+    mount,
+    page,
+    backendSimulator,
+  }) => {
     // Clear localStorage before mount to simulate a brand new device
     await page.evaluate(() => localStorage.clear());
 
@@ -40,7 +44,11 @@ test.describe("Child login", () => {
     await expect(page.getByText("Hi, Alex!")).toBeVisible({ timeout: 10000 });
   });
 
-  test("child can log in with PIN on known device", async ({ mount, page, backendSimulator }) => {
+  test("child can log in with PIN on known device", async ({
+    mount,
+    page,
+    backendSimulator,
+  }) => {
     // Seed data first (before mount, so we know the child details)
     const { parent } = seedParentAndChild(backendSimulator.db);
 
@@ -74,20 +82,30 @@ test.describe("Child login", () => {
 });
 
 test.describe("Chat", () => {
-  test("child can send a message and receive a streamed response", async ({ mount, page, backendSimulator }) => {
+  test("child can send a message and receive a streamed response", async ({
+    mount,
+    page,
+    backendSimulator,
+  }) => {
     // Seed data
     const { child } = seedParentAndChild(backendSimulator.db);
 
     // Set child session in localStorage BEFORE mount
-    await page.evaluate((session) => {
-      localStorage.setItem("child-safe-llm-child-session", JSON.stringify(session));
-    }, {
-      id: child.id,
-      displayName: child.displayName,
-      username: child.username,
-      presetName: child.presetName,
-      parentId: child.parentId,
-    });
+    await page.evaluate(
+      (session) => {
+        localStorage.setItem(
+          "child-safe-llm-child-session",
+          JSON.stringify(session),
+        );
+      },
+      {
+        id: child.id,
+        displayName: child.displayName,
+        username: child.username,
+        presetName: child.presetName,
+        parentId: child.parentId,
+      },
+    );
 
     await mount(<IwftApp initialPath="/child/chat/new" />);
     await backendSimulator.install(page);

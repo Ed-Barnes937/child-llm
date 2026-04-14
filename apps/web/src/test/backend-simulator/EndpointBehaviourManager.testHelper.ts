@@ -10,7 +10,10 @@ export class EndpointBehaviourManager {
     }
   }
 
-  setBehaviour = (endpoint: EndpointKey, behaviour: EndpointBehaviour): void => {
+  setBehaviour = (
+    endpoint: EndpointKey,
+    behaviour: EndpointBehaviour,
+  ): void => {
     this.behaviours.set(endpoint, behaviour);
   };
 

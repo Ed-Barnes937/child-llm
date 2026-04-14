@@ -109,18 +109,14 @@ export class BackendSimulatorDb {
   };
 
   registerDevice = (parentId: string, deviceToken: string): void => {
-    const exists = this.deviceList.find(
-      (d) => d.deviceToken === deviceToken,
-    );
+    const exists = this.deviceList.find((d) => d.deviceToken === deviceToken);
     if (!exists) {
       this.deviceList.push({ parentId, deviceToken });
     }
   };
 
   getChildrenByDevice = (deviceToken: string): MockChild[] => {
-    const device = this.deviceList.find(
-      (d) => d.deviceToken === deviceToken,
-    );
+    const device = this.deviceList.find((d) => d.deviceToken === deviceToken);
     if (!device) return [];
     return this.children.filter((c) => c.parentId === device.parentId);
   };

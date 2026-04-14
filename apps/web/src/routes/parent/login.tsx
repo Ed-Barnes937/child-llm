@@ -71,9 +71,7 @@ const LoginPage = () => {
               />
             </div>
 
-            {error && (
-              <p className="text-destructive text-sm">{error}</p>
-            )}
+            {error && <p className="text-destructive text-sm">{error}</p>}
 
             <Button type="submit" size="lg" disabled={loading}>
               {loading ? "Logging in..." : "Log in"}

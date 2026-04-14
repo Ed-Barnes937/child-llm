@@ -64,7 +64,10 @@ const DashboardPage = () => {
       <div className="mt-8 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Children</h2>
-          <Link to="/parent/onboarding" className={buttonVariants({ size: "sm" })}>
+          <Link
+            to="/parent/onboarding"
+            className={buttonVariants({ size: "sm" })}
+          >
             Add a child
           </Link>
         </div>
@@ -84,14 +87,17 @@ const DashboardPage = () => {
             {kids.map((child) => (
               <Card key={child.id}>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{child.displayName}</CardTitle>
+                  <CardTitle className="text-base">
+                    {child.displayName}
+                  </CardTitle>
                   <CardDescription>
                     {PRESET_LABELS[child.presetName] ?? child.presetName}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground text-sm">
-                    Username: <span className="font-mono">{child.username}</span>
+                    Username:{" "}
+                    <span className="font-mono">{child.username}</span>
                   </p>
                 </CardContent>
               </Card>

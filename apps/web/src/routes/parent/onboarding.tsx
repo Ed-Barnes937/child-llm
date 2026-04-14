@@ -116,8 +116,8 @@ const OnboardingPage = () => {
             </div>
             <p className="text-muted-foreground text-center text-sm">
               On a new device, your child logs in with their username and
-              password. On a shared family device, they just pick their name
-              and enter their PIN.
+              password. On a shared family device, they just pick their name and
+              enter their PIN.
             </p>
             <Button
               className="w-full"
@@ -198,12 +198,16 @@ const OnboardingPage = () => {
               </p>
             </div>
 
-            {error && (
-              <p className="text-destructive text-sm">{error}</p>
-            )}
+            {error && <p className="text-destructive text-sm">{error}</p>}
 
-            <Button type="submit" size="lg" disabled={createChildMutation.isPending}>
-              {createChildMutation.isPending ? "Creating account..." : "Create child account"}
+            <Button
+              type="submit"
+              size="lg"
+              disabled={createChildMutation.isPending}
+            >
+              {createChildMutation.isPending
+                ? "Creating account..."
+                : "Create child account"}
             </Button>
           </form>
         </CardContent>

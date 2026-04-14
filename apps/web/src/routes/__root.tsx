@@ -57,9 +57,7 @@ const NotFoundComponent = () => {
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-md space-y-4 text-center">
         <h1 className="text-4xl font-bold">404</h1>
-        <p className="text-muted-foreground">
-          This page doesn't exist.
-        </p>
+        <p className="text-muted-foreground">This page doesn't exist.</p>
         <Link to="/" className={buttonVariants()}>
           Go home
         </Link>

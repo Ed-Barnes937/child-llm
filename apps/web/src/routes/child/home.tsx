@@ -35,7 +35,10 @@ const ChildHomePage = () => {
         </p>
         <Link
           to="/child/chat/new"
-          className={buttonVariants({ size: "lg", className: "w-full max-w-xs" })}
+          className={buttonVariants({
+            size: "lg",
+            className: "w-full max-w-xs",
+          })}
         >
           Start a new conversation
         </Link>
