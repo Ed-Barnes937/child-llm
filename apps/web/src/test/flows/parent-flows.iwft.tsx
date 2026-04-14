@@ -1,5 +1,5 @@
-import { test, expect } from "./fixtures.testHelper";
-import IwftApp from "./IwftApp";
+import { test, expect } from "../fixtures.testHelper";
+import IwftApp from "../IwftApp";
 
 test.describe("Parent signup and login", () => {
   test("parent can register a new account", async ({ mount, page, backendSimulator }) => {

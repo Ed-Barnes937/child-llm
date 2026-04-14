@@ -4,7 +4,7 @@ import {
   type ComponentFixtures,
 } from "@playwright/experimental-ct-react";
 import type { PlaywrightTestArgs, PlaywrightTestOptions, TestType } from "@playwright/test";
-import { BackendSimulator } from "./BackendSimulator.testHelper";
+import { BackendSimulator } from "./backend-simulator/BackendSimulator.testHelper";
 
 interface IwftFixtures {
   backendSimulator: BackendSimulator;

@@ -1,6 +1,6 @@
-import { test, expect } from "./fixtures.testHelper";
-import IwftApp from "./IwftApp";
-import type { BackendSimulatorDb } from "./BackendSimulatorDb.testHelper";
+import { test, expect } from "../fixtures.testHelper";
+import IwftApp from "../IwftApp";
+import type { BackendSimulatorDb } from "../backend-simulator/BackendSimulatorDb.testHelper";
 
 const seedParentAndChild = (db: BackendSimulatorDb) => {
   const parent = db.createParent({
