@@ -22,9 +22,9 @@ const extractSessionToken = (
   return match ? match[1] : null;
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createAuthRoutes = (
   db: BackendSimulatorDb,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): RouteDefinition<any>[] => [
   post(
     "/sign-up/email",
@@ -116,9 +116,9 @@ export const createAuthRoutes = (
   ),
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createChildrenRoutes = (
   db: BackendSimulatorDb,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): RouteDefinition<any>[] => [
   get("/children", (req: HttpRequest) =>
     handleEndpointBehaviour(
@@ -165,9 +165,9 @@ export const createChildrenRoutes = (
   ),
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createChildAuthRoutes = (
   db: BackendSimulatorDb,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): RouteDefinition<any>[] => [
   post(
     "/child-auth/login-password",
@@ -246,9 +246,9 @@ export const createChildAuthRoutes = (
   ),
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createChatRoutes = (
   db: BackendSimulatorDb,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): RouteDefinition<any>[] => [
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   post("/chat/stream", (_req: HttpRequest) =>

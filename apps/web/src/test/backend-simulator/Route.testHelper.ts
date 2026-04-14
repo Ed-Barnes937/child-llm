@@ -65,8 +65,7 @@ const findMatchingRoute = (
   routes: RouteDefinition<any>[],
   method: string,
   pathname: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-):
+): // eslint-disable-next-line @typescript-eslint/no-explicit-any
   | { route: RouteDefinition<any>; pathParams: Record<string, string> }
   | undefined => {
   for (const route of routes) {
