@@ -1,5 +1,5 @@
 import { EndpointBehaviourManager } from "./EndpointBehaviourManager.testHelper";
-import type { PresetName } from "@child-safe-llm/shared";
+import type { PresetName, CalibrationAnswer } from "@child-safe-llm/shared";
 
 export interface MockParent {
   id: string;
@@ -31,12 +31,20 @@ export interface MockSession {
 let nextId = 1;
 const generateId = (): string => `mock-id-${nextId++}`;
 
+export interface MockCalibrationAnswer {
+  childId: string;
+  questionId: string;
+  selectedLevel: number | null;
+  customAnswer: string | null;
+}
+
 export class BackendSimulatorDb {
   readonly endpointBehaviourManager = new EndpointBehaviourManager();
   readonly parents: MockParent[] = [];
   readonly sessions: MockSession[] = [];
   readonly children: MockChild[] = [];
   readonly deviceList: MockDevice[] = [];
+  readonly calibrationAnswersList: MockCalibrationAnswer[] = [];
 
   createParent = (data: {
     name: string;
@@ -119,5 +127,23 @@ export class BackendSimulatorDb {
     const device = this.deviceList.find((d) => d.deviceToken === deviceToken);
     if (!device) return [];
     return this.children.filter((c) => c.parentId === device.parentId);
+  };
+
+  storeCalibrationAnswers = (
+    childId: string,
+    answers: CalibrationAnswer[],
+  ): void => {
+    for (const a of answers) {
+      this.calibrationAnswersList.push({
+        childId,
+        questionId: a.questionId,
+        selectedLevel: a.selectedLevel,
+        customAnswer: a.customAnswer,
+      });
+    }
+  };
+
+  getCalibrationAnswers = (childId: string): MockCalibrationAnswer[] => {
+    return this.calibrationAnswersList.filter((a) => a.childId === childId);
   };
 }

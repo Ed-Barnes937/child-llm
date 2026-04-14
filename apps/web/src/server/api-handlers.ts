@@ -1,53 +1,22 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { children, devices, presets } from "@child-safe-llm/db";
+import {
+  children,
+  devices,
+  presets,
+  calibrationAnswers,
+} from "@child-safe-llm/db";
 import { eq } from "drizzle-orm";
-import type { PresetName } from "@child-safe-llm/shared";
+import {
+  PRESET_DEFINITIONS,
+  type PresetName,
+  type PresetSliders,
+  type CalibrationAnswer,
+} from "@child-safe-llm/shared";
 
 const getDb = () => {
   const sql = postgres(process.env.DATABASE_URL!);
   return drizzle(sql);
-};
-
-const PRESET_DEFAULTS: Record<
-  PresetName,
-  {
-    vocabularyLevel: number;
-    responseDepth: number;
-    answeringStyle: number;
-    interactionMode: number;
-    topicAccess: number;
-    sessionLimits: number;
-    parentVisibility: number;
-  }
-> = {
-  "early-learner": {
-    vocabularyLevel: 1,
-    responseDepth: 1,
-    answeringStyle: 1,
-    interactionMode: 1,
-    topicAccess: 1,
-    sessionLimits: 2,
-    parentVisibility: 5,
-  },
-  "confident-reader": {
-    vocabularyLevel: 3,
-    responseDepth: 3,
-    answeringStyle: 3,
-    interactionMode: 3,
-    topicAccess: 3,
-    sessionLimits: 3,
-    parentVisibility: 3,
-  },
-  "independent-explorer": {
-    vocabularyLevel: 5,
-    responseDepth: 5,
-    answeringStyle: 5,
-    interactionMode: 5,
-    topicAccess: 5,
-    sessionLimits: 5,
-    parentVisibility: 1,
-  },
 };
 
 const generateUsername = (displayName: string): string => {
@@ -64,6 +33,8 @@ export const handleCreateChild = async (data: {
   displayName: string;
   presetName: PresetName;
   pin: string;
+  sliderOverrides?: Partial<PresetSliders>;
+  calibrationAnswers?: CalibrationAnswer[];
 }) => {
   const db = getDb();
   const username = generateUsername(data.displayName);
@@ -81,12 +52,24 @@ export const handleCreateChild = async (data: {
     })
     .returning();
 
-  const defaults = PRESET_DEFAULTS[data.presetName];
+  const defaults = PRESET_DEFINITIONS[data.presetName].sliders;
+  const sliders = { ...defaults, ...data.sliderOverrides };
   await db.insert(presets).values({
     childId: child.id,
     name: data.presetName,
-    ...defaults,
+    ...sliders,
   });
+
+  if (data.calibrationAnswers && data.calibrationAnswers.length > 0) {
+    await db.insert(calibrationAnswers).values(
+      data.calibrationAnswers.map((a) => ({
+        childId: child.id,
+        questionId: a.questionId,
+        selectedLevel: a.selectedLevel,
+        customAnswer: a.customAnswer,
+      })),
+    );
+  }
 
   return {
     child: { id: child.id, username, displayName: child.displayName },
