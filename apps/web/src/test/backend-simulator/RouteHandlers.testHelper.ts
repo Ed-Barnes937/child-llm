@@ -7,7 +7,11 @@ import type {
 import { get, post } from "./Route.testHelper";
 import { EndpointKey } from "./Endpoint.testHelper";
 import { handleEndpointBehaviour } from "./EndpointBehaviourManager.testHelper";
-import type { PresetName } from "@child-safe-llm/shared";
+import type {
+  PresetName,
+  PresetSliders,
+  CalibrationAnswer,
+} from "@child-safe-llm/shared";
 
 const json = (data: unknown, status = 200): RouteResponse => ({
   status,
@@ -147,12 +151,17 @@ export const createChildrenRoutes = (
         displayName: string;
         presetName: PresetName;
         pin: string;
+        sliderOverrides?: Partial<PresetSliders>;
+        calibrationAnswers?: CalibrationAnswer[];
       }>,
     ) =>
       handleEndpointBehaviour(
         db.endpointBehaviourManager.getBehaviour(EndpointKey.CREATE_CHILD),
         () => {
           const child = db.createChild(req.body);
+          if (req.body.calibrationAnswers) {
+            db.storeCalibrationAnswers(child.id, req.body.calibrationAnswers);
+          }
           return json({
             child: {
               id: child.id,

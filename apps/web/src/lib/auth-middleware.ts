@@ -29,128 +29,141 @@ export const serverMiddleware = (): Plugin => {
       server.middlewares.use(async (req, res, next) => {
         const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
 
-        // Better Auth middleware
-        if (req.url?.startsWith("/api/auth")) {
-          const { auth } = await server.ssrLoadModule("/src/lib/auth.ts");
-          const headers = toHeaders(req.headers);
-          const body = await readBody(req);
+        if (!req.url?.startsWith("/api/")) return next();
 
-          const request = new Request(url, {
-            method: req.method,
-            headers,
-            body:
-              req.method !== "GET" && req.method !== "HEAD" ? body : undefined,
-          });
+        try {
+          // Better Auth middleware
+          if (req.url?.startsWith("/api/auth")) {
+            const { auth } = await server.ssrLoadModule("/src/lib/auth.ts");
+            const headers = toHeaders(req.headers);
+            const body = await readBody(req);
 
-          const response = await auth.handler(request);
-          res.statusCode = response.status;
-          response.headers.forEach((value: string, key: string) => {
-            res.setHeader(key, value);
-          });
-          res.end(await response.text());
-          return;
-        }
+            const request = new Request(url, {
+              method: req.method,
+              headers,
+              body:
+                req.method !== "GET" && req.method !== "HEAD"
+                  ? body
+                  : undefined,
+            });
 
-        // Children API
-        if (req.url?.startsWith("/api/children")) {
-          const handlers = await server.ssrLoadModule(
-            "/src/server/api-handlers.ts",
-          );
-          const body = await readBody(req);
-
-          if (req.method === "POST") {
-            const data = JSON.parse(body);
-            const result = await handlers.handleCreateChild(data);
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify(result));
+            const response = await auth.handler(request);
+            res.statusCode = response.status;
+            response.headers.forEach((value: string, key: string) => {
+              res.setHeader(key, value);
+            });
+            res.end(await response.text());
             return;
           }
 
-          // GET
-          const parentId = url.searchParams.get("parentId");
-          if (!parentId) {
-            res.statusCode = 400;
-            res.end(JSON.stringify({ error: "parentId required" }));
-            return;
-          }
-          const result = await handlers.handleGetChildren(parentId);
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify(result));
-          return;
-        }
+          // Children API
+          if (req.url?.startsWith("/api/children")) {
+            const handlers = await server.ssrLoadModule(
+              "/src/server/api-handlers.ts",
+            );
+            const body = await readBody(req);
 
-        // Child Auth API
-        if (req.url?.startsWith("/api/child-auth/")) {
-          const handlers = await server.ssrLoadModule(
-            "/src/server/api-handlers.ts",
-          );
-          const body = await readBody(req);
-
-          if (req.url.startsWith("/api/child-auth/login-password")) {
-            const data = JSON.parse(body);
-            const result = await handlers.handleChildLoginWithPassword(data);
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify(result));
-            return;
-          }
-
-          if (req.url.startsWith("/api/child-auth/login-pin")) {
-            const data = JSON.parse(body);
-            const result = await handlers.handleChildLoginWithPin(data);
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify(result));
-            return;
-          }
-
-          if (req.url.startsWith("/api/child-auth/device-children")) {
-            const deviceToken = url.searchParams.get("deviceToken");
-            if (!deviceToken) {
+            if (req.method === "POST") {
+              const data = JSON.parse(body);
+              const result = await handlers.handleCreateChild(data);
               res.setHeader("Content-Type", "application/json");
-              res.end(JSON.stringify({ children: [] }));
+              res.end(JSON.stringify(result));
               return;
             }
-            const result =
-              await handlers.handleGetChildrenForDevice(deviceToken);
+
+            // GET
+            const parentId = url.searchParams.get("parentId");
+            if (!parentId) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: "parentId required" }));
+              return;
+            }
+            const result = await handlers.handleGetChildren(parentId);
             res.setHeader("Content-Type", "application/json");
             res.end(JSON.stringify(result));
             return;
           }
-        }
 
-        // Chat streaming API
-        if (req.url?.startsWith("/api/chat/stream")) {
-          const handlers = await server.ssrLoadModule(
-            "/src/server/api-handlers.ts",
-          );
-          const body = await readBody(req);
-          const data = JSON.parse(body);
+          // Child Auth API
+          if (req.url?.startsWith("/api/child-auth/")) {
+            const handlers = await server.ssrLoadModule(
+              "/src/server/api-handlers.ts",
+            );
+            const body = await readBody(req);
 
-          const pipelineResponse = await handlers.handleChatStream(data);
+            if (req.url.startsWith("/api/child-auth/login-password")) {
+              const data = JSON.parse(body);
+              const result = await handlers.handleChildLoginWithPassword(data);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
 
-          if (!pipelineResponse.ok || !pipelineResponse.body) {
-            res.statusCode = 502;
-            res.end(JSON.stringify({ error: "Pipeline error" }));
+            if (req.url.startsWith("/api/child-auth/login-pin")) {
+              const data = JSON.parse(body);
+              const result = await handlers.handleChildLoginWithPin(data);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            if (req.url.startsWith("/api/child-auth/device-children")) {
+              const deviceToken = url.searchParams.get("deviceToken");
+              if (!deviceToken) {
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({ children: [] }));
+                return;
+              }
+              const result =
+                await handlers.handleGetChildrenForDevice(deviceToken);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+          }
+
+          // Chat streaming API
+          if (req.url?.startsWith("/api/chat/stream")) {
+            const handlers = await server.ssrLoadModule(
+              "/src/server/api-handlers.ts",
+            );
+            const body = await readBody(req);
+            const data = JSON.parse(body);
+
+            const pipelineResponse = await handlers.handleChatStream(data);
+
+            if (!pipelineResponse.ok || !pipelineResponse.body) {
+              res.statusCode = 502;
+              res.end(JSON.stringify({ error: "Pipeline error" }));
+              return;
+            }
+
+            res.setHeader("Content-Type", "text/event-stream");
+            res.setHeader("Cache-Control", "no-cache");
+            res.setHeader("Connection", "keep-alive");
+
+            const reader = pipelineResponse.body.getReader();
+            const pump = async () => {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                res.write(value);
+              }
+              res.end();
+            };
+            pump().catch(() => res.end());
             return;
           }
 
-          res.setHeader("Content-Type", "text/event-stream");
-          res.setHeader("Cache-Control", "no-cache");
-          res.setHeader("Connection", "keep-alive");
-
-          const reader = pipelineResponse.body.getReader();
-          const pump = async () => {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              res.write(value);
-            }
-            res.end();
-          };
-          pump().catch(() => res.end());
-          return;
+          next();
+        } catch (err) {
+          console.error(`[API Error] ${req.method} ${req.url}:`, err);
+          if (!res.headersSent) {
+            res.statusCode = 500;
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ error: "Internal server error" }));
+          }
         }
-
-        next();
       });
     },
   };

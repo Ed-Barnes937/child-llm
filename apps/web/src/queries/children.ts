@@ -6,7 +6,11 @@ import {
 } from "@tanstack/react-query";
 import { childrenApi } from "@/api/children";
 import { childAuthApi } from "@/api/child-auth";
-import type { PresetName } from "@child-safe-llm/shared";
+import type {
+  PresetName,
+  PresetSliders,
+  CalibrationAnswer,
+} from "@child-safe-llm/shared";
 
 export const childrenByParentOptions = (parentId: string | undefined) => {
   return queryOptions({
@@ -41,6 +45,8 @@ export const useCreateChild = () => {
       displayName: string;
       presetName: PresetName;
       pin: string;
+      sliderOverrides?: Partial<PresetSliders>;
+      calibrationAnswers?: CalibrationAnswer[];
     }) => childrenApi.create(data),
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({

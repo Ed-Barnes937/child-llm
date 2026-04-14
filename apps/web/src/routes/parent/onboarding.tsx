@@ -1,8 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -12,36 +10,19 @@ import {
 } from "@/components/ui/card";
 import { useParentSession } from "@/queries/parent-auth";
 import { useCreateChild } from "@/queries/children";
-import type { PresetName } from "@child-safe-llm/shared";
-
-const PRESETS: { name: PresetName; label: string; description: string }[] = [
-  {
-    name: "early-learner",
-    label: "Early learner",
-    description:
-      "Ages 4-7. Simple vocabulary, short answers, structured interactions. Gentle and encouraging.",
-  },
-  {
-    name: "confident-reader",
-    label: "Confident reader",
-    description:
-      "Ages 7-10. Broader vocabulary, more detailed answers, can ask follow-up questions freely.",
-  },
-  {
-    name: "independent-explorer",
-    label: "Independent explorer",
-    description:
-      "Ages 10-13. Full vocabulary, in-depth explanations, freeform conversations with lighter guardrails.",
-  },
-];
+import OnboardingStep1 from "@/components/onboarding/OnboardingStep1";
+import OnboardingStep2 from "@/components/onboarding/OnboardingStep2";
+import OnboardingStep3 from "@/components/onboarding/OnboardingStep3";
+import {
+  INITIAL_ONBOARDING_DATA,
+  type OnboardingData,
+} from "@/components/onboarding/types";
 
 const OnboardingPage = () => {
   const navigate = useNavigate();
   const { data: session, isPending } = useParentSession();
-  const [displayName, setDisplayName] = useState("");
-  const [selectedPreset, setSelectedPreset] =
-    useState<PresetName>("confident-reader");
-  const [pin, setPin] = useState("");
+  const [step, setStep] = useState(0);
+  const [data, setData] = useState<OnboardingData>(INITIAL_ONBOARDING_DATA);
   const [error, setError] = useState("");
 
   const createChildMutation = useCreateChild();
@@ -63,8 +44,11 @@ const OnboardingPage = () => {
 
   if (!session) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const updateData = (partial: Partial<OnboardingData>) => {
+    setData((prev) => ({ ...prev, ...partial }));
+  };
+
+  const handleSubmit = () => {
     setError("");
 
     if (!session?.user?.id) {
@@ -72,17 +56,20 @@ const OnboardingPage = () => {
       return;
     }
 
-    if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-      setError("PIN must be exactly 4 digits.");
-      return;
-    }
-
     createChildMutation.mutate(
       {
         parentId: session.user.id,
-        displayName,
-        presetName: selectedPreset,
-        pin,
+        displayName: data.displayName,
+        presetName: data.presetName,
+        pin: data.pin,
+        sliderOverrides:
+          Object.keys(data.sliderOverrides).length > 0
+            ? data.sliderOverrides
+            : undefined,
+        calibrationAnswers:
+          data.calibrationAnswers.length > 0
+            ? data.calibrationAnswers
+            : undefined,
       },
       {
         onError: () =>
@@ -91,6 +78,7 @@ const OnboardingPage = () => {
     );
   };
 
+  // Success screen
   if (result) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4">
@@ -134,84 +122,44 @@ const OnboardingPage = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Add a child</CardTitle>
-          <CardDescription>
-            Give them a name, pick a starting preset, and set a PIN.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="displayName">Child&apos;s name</Label>
-              <Input
-                id="displayName"
-                type="text"
-                placeholder="e.g. Alex"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required
-              />
-            </div>
+      {step === 0 && (
+        <OnboardingStep1
+          data={data}
+          onNext={(partial) => {
+            updateData(partial);
+            setStep(1);
+          }}
+        />
+      )}
 
-            <div className="flex flex-col gap-2">
-              <Label>Preset</Label>
-              <div className="grid gap-2">
-                {PRESETS.map((preset) => (
-                  <button
-                    type="button"
-                    key={preset.name}
-                    onClick={() => setSelectedPreset(preset.name)}
-                    className={`rounded-lg border p-3 text-left transition-colors ${
-                      selectedPreset === preset.name
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <p className="font-medium">{preset.label}</p>
-                    <p className="text-muted-foreground text-sm">
-                      {preset.description}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </div>
+      {step === 1 && (
+        <OnboardingStep2
+          data={data}
+          onNext={(partial) => {
+            updateData(partial);
+            setStep(2);
+          }}
+          onBack={() => setStep(0)}
+        />
+      )}
 
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="pin">4-digit PIN</Label>
-              <Input
-                id="pin"
-                type="text"
-                inputMode="numeric"
-                pattern="\d{4}"
-                maxLength={4}
-                placeholder="e.g. 1234"
-                value={pin}
-                onChange={(e) =>
-                  setPin(e.target.value.replace(/\D/g, "").slice(0, 4))
-                }
-                required
-              />
-              <p className="text-muted-foreground text-xs">
-                Your child will use this PIN to log in on shared devices.
-              </p>
-            </div>
-
-            {error && <p className="text-destructive text-sm">{error}</p>}
-
-            <Button
-              type="submit"
-              size="lg"
-              disabled={createChildMutation.isPending}
-            >
-              {createChildMutation.isPending
-                ? "Creating account..."
-                : "Create child account"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      {step === 2 && (
+        <>
+          <OnboardingStep3
+            data={data}
+            onSubmit={handleSubmit}
+            onBack={() => setStep(1)}
+            onEdit={(targetStep) => setStep(targetStep)}
+            onSliderChange={(overrides) =>
+              updateData({ sliderOverrides: overrides })
+            }
+            isSubmitting={createChildMutation.isPending}
+          />
+          {error && (
+            <p className="text-destructive mt-2 text-center text-sm">{error}</p>
+          )}
+        </>
+      )}
     </div>
   );
 };

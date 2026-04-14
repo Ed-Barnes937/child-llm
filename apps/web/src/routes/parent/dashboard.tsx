@@ -11,12 +11,7 @@ import {
 import { parentAuth } from "@/api/parent-auth";
 import { useParentSession } from "@/queries/parent-auth";
 import { useChildrenByParent } from "@/queries/children";
-
-const PRESET_LABELS: Record<string, string> = {
-  "early-learner": "Early learner",
-  "confident-reader": "Confident reader",
-  "independent-explorer": "Independent explorer",
-};
+import { PRESET_DEFINITIONS, type PresetName } from "@child-safe-llm/shared";
 
 const DashboardPage = () => {
   const navigate = useNavigate();
@@ -91,7 +86,8 @@ const DashboardPage = () => {
                     {child.displayName}
                   </CardTitle>
                   <CardDescription>
-                    {PRESET_LABELS[child.presetName] ?? child.presetName}
+                    {PRESET_DEFINITIONS[child.presetName as PresetName]
+                      ?.label ?? child.presetName}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

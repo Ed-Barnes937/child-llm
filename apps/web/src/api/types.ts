@@ -1,4 +1,8 @@
-import type { PresetName } from "@child-safe-llm/shared";
+import type {
+  PresetName,
+  PresetSliders,
+  CalibrationAnswer,
+} from "@child-safe-llm/shared";
 
 // Children
 export interface CreateChildRequest {
@@ -6,6 +10,8 @@ export interface CreateChildRequest {
   displayName: string;
   presetName: PresetName;
   pin: string;
+  sliderOverrides?: Partial<PresetSliders>;
+  calibrationAnswers?: CalibrationAnswer[];
 }
 
 export interface CreateChildResponse {
