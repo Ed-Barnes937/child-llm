@@ -18,6 +18,8 @@
     "test:e2e": "pnpm --filter @child-safe-llm/web test:e2e",
     "db:generate": "pnpm --filter @child-safe-llm/db generate",
     "db:migrate": "pnpm --filter @child-safe-llm/db migrate",
+    "db:push": "pnpm --filter @child-safe-llm/db push",
+    "db:auth:push": "pnpm --filter @child-safe-llm/web db:auth:push",
     "db:studio": "pnpm --filter @child-safe-llm/db studio",
     "deploy:web": "fly deploy -c apps/web/fly.toml",
     "deploy:pipeline": "fly deploy -c apps/pipeline/fly.toml",

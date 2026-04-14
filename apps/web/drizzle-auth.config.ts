@@ -3,17 +3,16 @@ import { defineConfig } from "drizzle-kit";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// Load .env from monorepo root regardless of CWD
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 config({ path: path.resolve(__dirname, "../../.env") });
 
 export default defineConfig({
   dialect: "postgresql",
-  schema: "./src/schema/index.ts",
-  out: "./drizzle",
+  schema: "./src/lib/auth-schema.ts",
+  out: "./drizzle-auth",
   dbCredentials: {
     url: process.env.DATABASE_URL!,
   },
-  // Ignore Better Auth's tables — it manages its own migrations
-  tablesFilter: ["!user", "!session", "!account", "!verification"],
+  // Only manage Better Auth tables — ignore app tables managed by packages/db
+  tablesFilter: ["user", "session", "account", "verification"],
 });
