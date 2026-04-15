@@ -264,7 +264,8 @@ export const createChatRoutes = (
     handleEndpointBehaviour(
       db.endpointBehaviourManager.getBehaviour(EndpointKey.CHAT_STREAM),
       () => {
-        const tokens = [
+        const scenario = db.chatStreamScenario;
+        const tokens = scenario?.tokens ?? [
           "The ",
           "sun ",
           "is ",
@@ -278,9 +279,17 @@ export const createChatRoutes = (
           "and ",
           "warmth.",
         ];
-        const sseLines = tokens.map(
-          (t) => `data: ${JSON.stringify({ token: t })}\n\n`,
-        );
+
+        const sseLines: string[] = [];
+
+        // Emit flag event if present in scenario
+        if (scenario?.flag) {
+          sseLines.push(`data: ${JSON.stringify({ flag: scenario.flag })}\n\n`);
+        }
+
+        for (const t of tokens) {
+          sseLines.push(`data: ${JSON.stringify({ token: t })}\n\n`);
+        }
         sseLines.push("data: [DONE]\n\n");
 
         return {

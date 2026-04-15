@@ -33,6 +33,10 @@ export const chatApi = {
             const parsed = JSON.parse(payload);
             if (parsed.token) {
               yield { token: parsed.token as string };
+            } else if (parsed.error) {
+              yield { error: parsed.error as string };
+            } else if (parsed.flag) {
+              yield { flag: parsed.flag };
             }
           } catch {
             // skip unparseable lines

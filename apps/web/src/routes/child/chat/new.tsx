@@ -66,6 +66,13 @@ const ChatPage = () => {
             break;
           }
 
+          if ("flag" in chunk) {
+            // Flag received from pipeline — will be persisted by the web
+            // app in a future phase. For now, just log it.
+            console.log("[Pipeline flag]", chunk.flag);
+            continue;
+          }
+
           if ("token" in chunk) {
             setMessages((prev) => {
               const updated = [...prev];
