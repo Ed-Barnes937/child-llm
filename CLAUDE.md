@@ -53,6 +53,16 @@ The pipeline uses Node's `--env-file=../../.env` flag (in the dev script) to loa
 
 The `/chat` endpoint accepts optional `sliders` and `calibrationAnswers` fields. When omitted, it falls back to the preset's default slider values. The web app does not yet send these — it only sends `presetName`, `message`, and `history`.
 
+### Blocklist uses `obscenity` and `libphonenumber-js`
+
+The output blocklist (`apps/pipeline/src/blocklist.ts`) uses the `obscenity` library for profanity/explicit content detection and `libphonenumber-js` for phone number detection. Hand-rolled regex is only used for dangerous content patterns and URL/email detection.
+
+Key design decisions:
+
+- **Educational terms excluded**: `penis`, `vagina`, and `sex` are removed from `obscenity`'s default dataset. These are legitimate in age-appropriate explanations — the sensitive topics system + validation model handle appropriateness instead.
+- **Custom whitelists**: The `obscenity` default dataset doesn't whitelist all common words (e.g. `cockpit`, `cocktail`). These are added as extra whitelisted terms on the matcher. If you encounter new false positives, add them there.
+- **Phone number validation is country-aware**: `libphonenumber-js` is configured with `'GB'` as the default country. It correctly ignores postcodes and scientific numbers but won't catch numbers that fail validation against known ranges (e.g. Ofcom reserved ranges).
+
 ### Pipeline unit tests use vitest
 
 The pipeline has its own vitest setup (`pnpm --filter @child-safe-llm/pipeline test`). These are fast unit tests for pure functions (prompt builder, blocklist, sensitive topic detection, validation parsing, context anchoring, depth tracking). They are separate from the Playwright CT tests in the web app.
