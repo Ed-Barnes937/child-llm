@@ -137,6 +137,7 @@ On the parent side: the onboarding calibration mechanic (S6) where parents are s
 - [ ] Update system prompt builder to incorporate calibration answers
 - [ ] Build child settings screen (S9a) — preset selector, all 7 sliders, calibration review/edit
 - [ ] Update system prompt builder to incorporate slider values
+- [ ] Wire web app to pass child's slider overrides and calibration answers to the pipeline service in the chat request
 - [ ] Build intent selection screen (S21a) — visual cards for restricted presets
 - [ ] Wire intent selection to show/skip based on interaction_mode slider
 

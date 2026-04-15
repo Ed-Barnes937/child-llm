@@ -81,6 +81,7 @@ The core child-facing UI.
 - [ ] **4.1** Build child home screen (S20) — new conversation button, "Inspire me" button, previous conversations list
 - [ ] **4.2** Build chat screen (S21) — message input, send button, streaming message display (WhatsApp-style bubbles)
 - [ ] **4.3** Connect chat screen to pipeline service — send messages via TanStack Start server function → pipeline service → stream response back to client
+- [ ] **4.3a** Pass child's full guardrail config to the pipeline — look up the child's slider overrides and calibration answers from the DB and include them in the pipeline request, so the system prompt reflects parent customisations
 - [ ] **4.4** Implement "Report unsatisfactory answer" button on each AI response — creates a flag record
 - [ ] **4.5** Build intent selection screen (S21a) — visual cards for restricted presets. Wire up to skip/show based on child's preset config.
 - [ ] **4.6** Implement "Inspire me" — fetch a random topic suggestion (hardcoded pool initially + parent-seeded topics)
