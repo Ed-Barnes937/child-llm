@@ -55,6 +55,13 @@ describe("scanOutput", () => {
       const result = scanOutput("Ring +44 7700 900123");
       expect(result.blocked).toBe(true);
     });
+
+    it("does not false-positive on spaced scientific numbers", () => {
+      const result = scanOutput(
+        "The speed of light is 299 792 458 metres per second",
+      );
+      expect(result.blocked).toBe(false);
+    });
   });
 
   describe("profanity and slurs", () => {
@@ -77,6 +84,20 @@ describe("scanOutput", () => {
 
     it("does not false-positive on 'class' or 'pass'", () => {
       const result = scanOutput("Let's go to class and pass the test");
+      expect(result.blocked).toBe(false);
+    });
+
+    it("does not false-positive on 'assassin'", () => {
+      const result = scanOutput(
+        "The assassin crept through the castle in the story",
+      );
+      expect(result.blocked).toBe(false);
+    });
+
+    it("does not false-positive on 'Niger' or 'Nigeria'", () => {
+      const result = scanOutput(
+        "Niger and Nigeria are countries in West Africa",
+      );
       expect(result.blocked).toBe(false);
     });
   });

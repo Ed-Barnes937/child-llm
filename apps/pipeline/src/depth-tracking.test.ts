@@ -66,6 +66,21 @@ describe("checkConversationDepth", () => {
     expect(result.sensitiveCount).toBe(3);
   });
 
+  it("does not double-count when history includes the current message", () => {
+    // The web app includes the current message in history — the function
+    // must deduplicate to avoid inflating the count.
+    const currentMessage = "Does dying hurt?";
+    const history = [
+      { role: "user", content: "What happens when you die?" },
+      { role: "assistant", content: "When someone dies..." },
+      { role: "user", content: currentMessage }, // duplicate of currentMessage
+    ];
+    const result = checkConversationDepth(history, currentMessage, 3);
+    // Should be 2 (previous sensitive + current), NOT 3
+    expect(result.shouldRedirect).toBe(false);
+    expect(result.sensitiveCount).toBe(2);
+  });
+
   it("uses default threshold of 3", () => {
     const history = [
       { role: "user", content: "What happens when you die?" },

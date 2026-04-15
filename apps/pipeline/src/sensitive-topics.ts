@@ -77,7 +77,7 @@ const SENSITIVE_TOPIC_PATTERNS: TopicPattern[] = [
     topic: "body-and-puberty",
     patterns: [
       /\bpubert\w*\b/i,
-      /\bperiod|menstruat\w*/i,
+      /\bmenstruat\w*|(?:got|started|having|getting|get|have|my|her|first)\s+period\b/i,
       /\bbody\s+(?:hair|changes|parts)\b/i,
       /\bbreasts?|penis|vagina\b/i,
     ],

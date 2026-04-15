@@ -22,10 +22,10 @@ const PROFANITY_PATTERNS: RegExp[] = [
   /\bbitch\w*/i,
   /\bpiss(?!ton)\w*/i,
   /\bcock(?!pit|roach|atoo|erel|ade|ney)\b/i,
-  /(?<![a-z])ass(?!ign|ist|ess|emble|ert|et|ume|ociat|ur)/i,
+  /(?<![a-z])ass(?!ign|ist|ess|emble|ert|et|ume|ociat|ur|assin)/i,
   /\bbastard\w*/i,
   /\bdamn\b/i,
-  /\bn+[i1]+[gq]+[e3]*r/i,
+  /\bn[i1]+gg+[e3]*r/i,
   /\bfagg?ot\w*/i,
   /\bretard(?:ed)?\b/i,
   /\bspastic\b/i,
@@ -54,7 +54,7 @@ const CONTACT_PATTERNS: RegExp[] = [
   /https?:\/\/\S+/i,
   /www\.\S+/i,
   /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/,
-  /(?:\+?\d{1,3}[\s-]?)?\(?\d{2,5}\)?[\s-]?\d{3,4}[\s-]?\d{3,4}\b/,
+  /(?:\+\d{1,3}[\s-]?|0)\(?\d{2,5}\)?[\s-]?\d{3,4}[\s-]?\d{3,4}\b/,
 ];
 
 const runPatterns = (

@@ -38,8 +38,17 @@ export const checkConversationDepth = (
   // Count backwards through user messages to find consecutive sensitive ones
   let consecutiveSensitive = 1;
 
-  // Walk backwards through history, only counting user messages
-  const userMessages = history.filter((m) => m.role === "user").reverse();
+  // Walk backwards through history, only counting user messages.
+  // Skip the last user message if it matches currentMessage — callers
+  // may include the current message in the history array.
+  const userMessages = history.filter((m) => m.role === "user");
+  if (
+    userMessages.length > 0 &&
+    userMessages[userMessages.length - 1].content === currentMessage
+  ) {
+    userMessages.pop();
+  }
+  userMessages.reverse();
 
   for (const msg of userMessages) {
     const result = detectSensitiveTopics(msg.content);

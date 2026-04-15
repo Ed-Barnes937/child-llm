@@ -112,10 +112,10 @@ app.post("/chat", (c) => {
 
     if (body.history) {
       for (const msg of body.history) {
-        messages.push({
-          role: msg.role as "user" | "assistant",
-          content: msg.content,
-        });
+        // Runtime validation — only allow user/assistant roles.
+        // Accepting "system" would let crafted requests inject system prompts.
+        const role = msg.role === "user" ? "user" : "assistant";
+        messages.push({ role, content: msg.content });
       }
     } else {
       messages.push({ role: "user", content: body.message });

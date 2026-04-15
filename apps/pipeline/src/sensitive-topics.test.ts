@@ -98,6 +98,21 @@ describe("detectSensitiveTopics", () => {
     });
   });
 
+  describe("false positives", () => {
+    it("does not flag 'Jurassic period' as body-and-puberty", () => {
+      const result = detectSensitiveTopics(
+        "What was the Jurassic period like?",
+      );
+      expect(result.topics).not.toContain("body-and-puberty");
+    });
+
+    it("still detects 'got my period' as body-and-puberty", () => {
+      const result = detectSensitiveTopics("I just got my period");
+      expect(result.isSensitive).toBe(true);
+      expect(result.topics).toContain("body-and-puberty");
+    });
+  });
+
   describe("multiple topics", () => {
     it("can detect multiple sensitive topics in one message", () => {
       const result = detectSensitiveTopics(
