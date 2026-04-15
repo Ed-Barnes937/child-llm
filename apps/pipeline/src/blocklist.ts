@@ -1,3 +1,11 @@
+import {
+  RegExpMatcher,
+  DataSet,
+  englishDataset,
+  englishRecommendedTransformers,
+} from "obscenity";
+import { findPhoneNumbersInText } from "libphonenumber-js";
+
 export interface BlocklistMatch {
   category: "profanity" | "explicit" | "dangerous" | "contact-info";
   matched: string;
@@ -8,39 +16,35 @@ export interface BlocklistResult {
   matches: BlocklistMatch[];
 }
 
-// Word-boundary patterns for terms that appear as substrings in innocent words.
-// \b alone isn't enough — "ass" matches "assistant", "class", "pass".
-// These use negative lookbehind/lookahead to avoid false positives.
-const PROFANITY_PATTERNS: RegExp[] = [
-  /\bfuck\w*/i,
-  /\bshit(?!ake)\w*/i,
-  /\bbullshit\w*/i,
-  /\bcunt\w*/i,
-  /\bdick(?!ens)\b/i,
-  /\btwat\w*/i,
-  /\bwanker\w*/i,
-  /\bbitch\w*/i,
-  /\bpiss(?!ton)\w*/i,
-  /\bcock(?!pit|roach|atoo|erel|ade|ney)\b/i,
-  /(?<![a-z])ass(?!ign|ist|ess|emble|ert|et|ume|ociat|ur|assin)/i,
-  /\bbastard\w*/i,
-  /\bdamn\b/i,
-  /\bn[i1]+gg+[e3]*r/i,
-  /\bfagg?ot\w*/i,
-  /\bretard(?:ed)?\b/i,
-  /\bspastic\b/i,
-];
+// Customise the english dataset: remove medical/educational terms that may
+// appear legitimately in age-appropriate explanations. The sensitive topics
+// system + validation model handle appropriateness of these terms.
+const EDUCATIONAL_TERMS = ["penis", "vagina", "sex"];
 
-const EXPLICIT_PATTERNS: RegExp[] = [
-  /\bpornograph\w*/i,
-  /\bporn\b/i,
-  /\bhentai\b/i,
-  /\bxxx\b/i,
-  /\borgasm\w*/i,
-  /\bmasturbat\w*/i,
-  /\beroti[ck]\w*/i,
-];
+const customDataset = new DataSet<{ originalWord: string }>()
+  .addAll(englishDataset)
+  .removePhrasesIf((phrase) =>
+    EDUCATIONAL_TERMS.includes(phrase.metadata?.originalWord ?? ""),
+  );
 
+const datasetBuild = customDataset.build();
+
+const matcher = new RegExpMatcher({
+  ...datasetBuild,
+  ...englishRecommendedTransformers,
+  // Extend the library's whitelist with additional false-positive terms
+  whitelistedTerms: [
+    ...(datasetBuild.whitelistedTerms ?? []),
+    "cockpit",
+    "cocktail",
+    "cockatoo",
+    "cockerel",
+    "cocoa",
+    "peacock",
+  ],
+});
+
+// Dangerous content patterns — domain-specific, no library covers these
 const DANGEROUS_PATTERNS: RegExp[] = [
   /\b(?:make|build|create|construct)\s+(?:a\s+)?bomb/i,
   /\bmethamphetamine\b/i,
@@ -50,11 +54,11 @@ const DANGEROUS_PATTERNS: RegExp[] = [
   /\bhow\s+to\s+(?:kill|murder)\b/i,
 ];
 
-const CONTACT_PATTERNS: RegExp[] = [
+// URL and email patterns — simple and correct, no library needed
+const URL_EMAIL_PATTERNS: RegExp[] = [
   /https?:\/\/\S+/i,
   /www\.\S+/i,
   /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/,
-  /(?:\+\d{1,3}[\s-]?|0)\(?\d{2,5}\)?[\s-]?\d{3,4}[\s-]?\d{3,4}\b/,
 ];
 
 const runPatterns = (
@@ -73,12 +77,31 @@ const runPatterns = (
 };
 
 export const scanOutput = (text: string): BlocklistResult => {
-  const matches: BlocklistMatch[] = [
-    ...runPatterns(text, PROFANITY_PATTERNS, "profanity"),
-    ...runPatterns(text, EXPLICIT_PATTERNS, "explicit"),
-    ...runPatterns(text, DANGEROUS_PATTERNS, "dangerous"),
-    ...runPatterns(text, CONTACT_PATTERNS, "contact-info"),
-  ];
+  const matches: BlocklistMatch[] = [];
+
+  // Profanity + explicit content (obscenity library — handles leet-speak,
+  // unicode confusables, and has built-in false-positive whitelists)
+  const profanityMatches = matcher.getAllMatches(text);
+  for (const m of profanityMatches) {
+    const matched = text.slice(m.startIndex, m.endIndex + 1);
+    matches.push({ category: "profanity", matched });
+  }
+
+  // Dangerous content (custom regex — domain-specific)
+  matches.push(...runPatterns(text, DANGEROUS_PATTERNS, "dangerous"));
+
+  // URLs and emails (custom regex)
+  matches.push(...runPatterns(text, URL_EMAIL_PATTERNS, "contact-info"));
+
+  // Phone numbers (libphonenumber-js — proper parsing, ignores postcodes
+  // and scientific numbers that greedy regex would false-positive on)
+  const phoneMatches = findPhoneNumbersInText(text, "GB");
+  for (const phone of phoneMatches) {
+    matches.push({
+      category: "contact-info",
+      matched: text.slice(phone.startsAt, phone.endsAt),
+    });
+  }
 
   return {
     blocked: matches.length > 0,

@@ -166,7 +166,7 @@ Get it ready for real users.
 ## Phase 10: Pre-Launch
 Final steps before real users.
 
-- [ ] **10.1** Red team the guardrails — attempt prompt injection, edge cases, inappropriate queries across all preset levels
+- [ ] **10.1** Red team the guardrails — attempt prompt injection, edge cases, inappropriate queries across all preset levels. Evaluate adding LlamaGuard 4 via OpenRouter ($0.18/M tokens) as a purpose-built safety classifier — it has 14 categories including child exploitation (S4), and runs on the same OpenRouter infra we already use
 - [ ] **10.2** Content finalisation — all calibration questions, preset definitions, system prompts, "Inspire me" pool, intent categories reviewed and polished
 - [ ] **10.3** Custom design theme pass — replace Shadcn defaults with the product's visual identity
 - [ ] **10.4** User validation — show to 5-10 parents, gather feedback, iterate

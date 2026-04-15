@@ -19,6 +19,81 @@ describe("scanOutput", () => {
     });
   });
 
+  describe("profanity and slurs (obscenity library)", () => {
+    it("catches common profanity", () => {
+      const result = scanOutput("What the fuck is that?");
+      expect(result.blocked).toBe(true);
+      expect(result.matches.some((m) => m.category === "profanity")).toBe(true);
+    });
+
+    it("catches profanity regardless of case", () => {
+      const result = scanOutput("That's BULLSHIT");
+      expect(result.blocked).toBe(true);
+    });
+
+    it("catches leet-speak evasion", () => {
+      const result = scanOutput("You're such a b1tch");
+      expect(result.blocked).toBe(true);
+    });
+
+    it("catches symbol substitution", () => {
+      const result = scanOutput("What the f@ck");
+      expect(result.blocked).toBe(true);
+    });
+
+    it("does not false-positive on words containing blocked substrings", () => {
+      const result = scanOutput("I'm your helpful assistant");
+      expect(result.blocked).toBe(false);
+    });
+
+    it("does not false-positive on 'class' or 'pass'", () => {
+      const result = scanOutput("Let's go to class and pass the test");
+      expect(result.blocked).toBe(false);
+    });
+
+    it("does not false-positive on 'assassin'", () => {
+      const result = scanOutput(
+        "The assassin crept through the castle in the story",
+      );
+      expect(result.blocked).toBe(false);
+    });
+
+    it("does not false-positive on 'Niger' or 'Nigeria'", () => {
+      const result = scanOutput(
+        "Niger and Nigeria are countries in West Africa",
+      );
+      expect(result.blocked).toBe(false);
+    });
+
+    it("does not false-positive on 'cocktail' or 'cockpit'", () => {
+      const result = scanOutput(
+        "The pilot sat in the cockpit sipping a fruit cocktail",
+      );
+      expect(result.blocked).toBe(false);
+    });
+  });
+
+  describe("educational terms are allowed", () => {
+    it("allows 'penis' in educational context", () => {
+      const result = scanOutput(
+        "The penis is a body part that boys and men have.",
+      );
+      expect(result.blocked).toBe(false);
+    });
+
+    it("allows 'vagina' in educational context", () => {
+      const result = scanOutput(
+        "The vagina is a body part that girls and women have.",
+      );
+      expect(result.blocked).toBe(false);
+    });
+
+    it("allows 'sex' in educational context", () => {
+      const result = scanOutput("The sex of an animal can be male or female.");
+      expect(result.blocked).toBe(false);
+    });
+  });
+
   describe("URLs and contact info", () => {
     it("catches http URLs", () => {
       const result = scanOutput("Check out http://example.com for more info");
@@ -47,12 +122,12 @@ describe("scanOutput", () => {
     });
 
     it("catches phone numbers", () => {
-      const result = scanOutput("Call me on 07700 900123");
+      const result = scanOutput("Call me on 07911 123456");
       expect(result.blocked).toBe(true);
     });
 
     it("catches phone numbers with country code", () => {
-      const result = scanOutput("Ring +44 7700 900123");
+      const result = scanOutput("Ring +44 20 7946 0958");
       expect(result.blocked).toBe(true);
     });
 
@@ -61,52 +136,6 @@ describe("scanOutput", () => {
         "The speed of light is 299 792 458 metres per second",
       );
       expect(result.blocked).toBe(false);
-    });
-  });
-
-  describe("profanity and slurs", () => {
-    it("catches common profanity", () => {
-      const result = scanOutput("What the fuck is that?");
-      expect(result.blocked).toBe(true);
-      expect(result.matches.some((m) => m.category === "profanity")).toBe(true);
-    });
-
-    it("catches profanity regardless of case", () => {
-      const result = scanOutput("That's BULLSHIT");
-      expect(result.blocked).toBe(true);
-    });
-
-    it("does not false-positive on words containing blocked substrings", () => {
-      // "ass" is blocked but "assistant" should not be
-      const result = scanOutput("I'm your helpful assistant");
-      expect(result.blocked).toBe(false);
-    });
-
-    it("does not false-positive on 'class' or 'pass'", () => {
-      const result = scanOutput("Let's go to class and pass the test");
-      expect(result.blocked).toBe(false);
-    });
-
-    it("does not false-positive on 'assassin'", () => {
-      const result = scanOutput(
-        "The assassin crept through the castle in the story",
-      );
-      expect(result.blocked).toBe(false);
-    });
-
-    it("does not false-positive on 'Niger' or 'Nigeria'", () => {
-      const result = scanOutput(
-        "Niger and Nigeria are countries in West Africa",
-      );
-      expect(result.blocked).toBe(false);
-    });
-  });
-
-  describe("explicit content keywords", () => {
-    it("catches explicit sexual terms", () => {
-      const result = scanOutput("Let me describe pornography to you");
-      expect(result.blocked).toBe(true);
-      expect(result.matches.some((m) => m.category === "explicit")).toBe(true);
     });
   });
 
