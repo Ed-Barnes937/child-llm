@@ -17,6 +17,7 @@ import { Route as ParentDashboardRouteImport } from './routes/parent/dashboard'
 import { Route as ChildLoginRouteImport } from './routes/child/login'
 import { Route as ChildHomeRouteImport } from './routes/child/home'
 import { Route as ChildChatNewRouteImport } from './routes/child/chat/new'
+import { Route as ChildChatConversationIdRouteImport } from './routes/child/chat/$conversationId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -58,6 +59,11 @@ const ChildChatNewRoute = ChildChatNewRouteImport.update({
   path: '/child/chat/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChildChatConversationIdRoute = ChildChatConversationIdRouteImport.update({
+  id: '/child/chat/$conversationId',
+  path: '/child/chat/$conversationId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/parent/onboarding': typeof ParentOnboardingRoute
   '/parent/register': typeof ParentRegisterRoute
   '/child/chat/new': typeof ChildChatNewRoute
+  '/child/chat/$conversationId': typeof ChildChatConversationIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +85,7 @@ export interface FileRoutesByTo {
   '/parent/onboarding': typeof ParentOnboardingRoute
   '/parent/register': typeof ParentRegisterRoute
   '/child/chat/new': typeof ChildChatNewRoute
+  '/child/chat/$conversationId': typeof ChildChatConversationIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/parent/onboarding': typeof ParentOnboardingRoute
   '/parent/register': typeof ParentRegisterRoute
   '/child/chat/new': typeof ChildChatNewRoute
+  '/child/chat/$conversationId': typeof ChildChatConversationIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
     | '/parent/onboarding'
     | '/parent/register'
     | '/child/chat/new'
+    | '/child/chat/$conversationId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/parent/onboarding'
     | '/parent/register'
     | '/child/chat/new'
+    | '/child/chat/$conversationId'
   id:
     | '__root__'
     | '/'
@@ -121,6 +132,7 @@ export interface FileRouteTypes {
     | '/parent/onboarding'
     | '/parent/register'
     | '/child/chat/new'
+    | '/child/chat/$conversationId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -132,6 +144,7 @@ export interface RootRouteChildren {
   ParentOnboardingRoute: typeof ParentOnboardingRoute
   ParentRegisterRoute: typeof ParentRegisterRoute
   ChildChatNewRoute: typeof ChildChatNewRoute
+  ChildChatConversationIdRoute: typeof ChildChatConversationIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -192,6 +205,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChildChatNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/child/chat/$conversationId': {
+      id: '/child/chat/$conversationId'
+      path: '/child/chat/$conversationId'
+      fullPath: '/child/chat/$conversationId'
+      preLoaderRoute: typeof ChildChatConversationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -204,6 +224,7 @@ const rootRouteChildren: RootRouteChildren = {
   ParentOnboardingRoute: ParentOnboardingRoute,
   ParentRegisterRoute: ParentRegisterRoute,
   ChildChatNewRoute: ChildChatNewRoute,
+  ChildChatConversationIdRoute: ChildChatConversationIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

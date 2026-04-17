@@ -61,6 +61,19 @@ export const serverMiddleware = (): Plugin => {
             const handlers = await server.ssrLoadModule(
               "/src/server/api-handlers.ts",
             );
+
+            // GET /api/children/:childId/config
+            const configMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/config$/,
+            );
+            if (configMatch && req.method === "GET") {
+              const childId = configMatch[1];
+              const result = await handlers.handleGetChildConfig(childId);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
             const body = await readBody(req);
 
             if (req.method === "POST") {
@@ -71,7 +84,7 @@ export const serverMiddleware = (): Plugin => {
               return;
             }
 
-            // GET
+            // GET /api/children?parentId=x
             const parentId = url.searchParams.get("parentId");
             if (!parentId) {
               res.statusCode = 400;

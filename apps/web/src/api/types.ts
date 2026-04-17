@@ -163,3 +163,9 @@ export interface CreateFlagRequest {
 export interface CreateFlagResponse {
   id: string;
 }
+
+// Child Config
+export interface ChildConfigResponse {
+  sliders: PresetSliders;
+  calibrationAnswers: CalibrationAnswer[];
+}

@@ -125,6 +125,16 @@ export const createChildrenRoutes = (
   db: BackendSimulatorDb,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): RouteDefinition<any>[] => [
+  get("/children/:childId/config", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(EndpointKey.GET_CHILD_CONFIG),
+      () => {
+        const { childId } = req.pathParams;
+        return json(db.getChildConfig(childId));
+      },
+    ),
+  ),
+
   get("/children", (req: HttpRequest) =>
     handleEndpointBehaviour(
       db.endpointBehaviourManager.getBehaviour(EndpointKey.GET_CHILDREN),
