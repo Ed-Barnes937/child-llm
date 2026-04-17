@@ -33,6 +33,14 @@ app.use("/chat", async (c, next) => {
   await next();
 });
 
+app.use("/summarise", async (c, next) => {
+  const apiKey = c.req.header("x-pipeline-key");
+  if (apiKey !== PIPELINE_API_KEY) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  await next();
+});
+
 const openai = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
   apiKey: process.env.OPENROUTER_API_KEY ?? "",
@@ -210,6 +218,60 @@ app.post("/chat", (c) => {
 
     await sseStream.writeSSE({ data: "[DONE]" });
   });
+});
+
+interface SummariseRequestBody {
+  messages: { role: string; content: string }[];
+  childName?: string;
+}
+
+app.post("/summarise", async (c) => {
+  let body: SummariseRequestBody;
+
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: "Invalid request" }, 400);
+  }
+
+  if (!body.messages || body.messages.length === 0) {
+    return c.json({ error: "No messages to summarise" }, 400);
+  }
+
+  const messageText = body.messages
+    .map(
+      (m) =>
+        `${m.role === "user" || m.role === "child" ? "Child" : "AI"}: ${m.content}`,
+    )
+    .join("\n");
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: "openai/gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are summarising a conversation between a child and an AI assistant. " +
+            "Write a brief, parent-friendly summary (2-4 sentences) that captures the main topics discussed " +
+            "and any notable moments. Use simple language. Do not include any inappropriate content " +
+            "even if it appeared in the conversation.",
+        },
+        {
+          role: "user",
+          content: `Summarise this conversation:\n\n${messageText}`,
+        },
+      ],
+      stream: false,
+      max_tokens: 200,
+    });
+
+    const summary = completion.choices[0]?.message?.content ?? "";
+    return c.json({ summary });
+  } catch (err) {
+    console.error("Summarisation error:", err);
+    return c.json({ error: "Failed to generate summary" }, 500);
+  }
 });
 
 const emitFlagAndFallback = async (

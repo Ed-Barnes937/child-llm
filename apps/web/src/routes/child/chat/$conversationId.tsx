@@ -21,6 +21,7 @@ const ContinueChatPage = () => {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<string | null>(null);
   const [sliders, setSliders] = useState<PresetSliders | null>(null);
   const [calibrationAnswers, setCalibrationAnswers] = useState<
     CalibrationAnswer[]
@@ -40,12 +41,17 @@ const ContinueChatPage = () => {
 
     const load = async () => {
       try {
-        const [existingMessages, config] = await Promise.all([
+        const [existingMessages, summaryResult, config] = await Promise.all([
           conversationsApi.getMessages(conversationId),
+          conversationsApi.getSummary(conversationId).catch(() => null),
           conversationsApi
             .getChildConfig(childSession.current!.id)
             .catch(() => null),
         ]);
+
+        if (summaryResult?.summary) {
+          setSummary(summaryResult.summary);
+        }
 
         const loaded: Message[] = existingMessages.map((m) => ({
           role: m.role as "child" | "ai",
@@ -229,10 +235,57 @@ const ContinueChatPage = () => {
     sendMessage(input);
   };
 
+  const handleDelete = async () => {
+    await conversationsApi.deleteConversation(conversationId);
+    navigate({ to: "/child/home" });
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <p className="text-muted-foreground">Loading conversation...</p>
+      </div>
+    );
+  }
+
+  if (summary && messages.length === 0) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <header className="border-border flex items-center justify-between border-b px-4 py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate({ to: "/child/home" })}
+          >
+            Back
+          </Button>
+          <h1 className="text-sm font-medium">Conversation summary</h1>
+          <div className="w-16" />
+        </header>
+
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-8">
+          <div className="mx-auto w-full max-w-lg">
+            <div
+              data-testid="conversation-summary"
+              className="bg-muted rounded-xl p-6"
+            >
+              <p className="text-sm leading-relaxed">{summary}</p>
+            </div>
+            <p className="text-muted-foreground mt-4 text-center text-xs">
+              The full conversation has been summarised to save space.
+            </p>
+            <div className="mt-6 flex justify-center">
+              <Button
+                variant="destructive"
+                size="sm"
+                data-testid="delete-conversation"
+                onClick={handleDelete}
+              >
+                Delete conversation
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

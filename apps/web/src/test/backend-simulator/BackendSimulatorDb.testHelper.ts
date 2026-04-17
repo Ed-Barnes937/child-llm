@@ -37,6 +37,7 @@ export interface MockConversation {
   id: string;
   childId: string;
   title: string | null;
+  summary: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -211,12 +212,14 @@ export class BackendSimulatorDb {
   createConversation = (data: {
     childId: string;
     title?: string;
+    summary?: string;
   }): MockConversation => {
     const now = new Date().toISOString();
     const conversation: MockConversation = {
       id: generateId(),
       childId: data.childId,
       title: data.title ?? null,
+      summary: data.summary ?? null,
       createdAt: now,
       updatedAt: now,
     };
@@ -266,6 +269,50 @@ export class BackendSimulatorDb {
     }
 
     return message;
+  };
+
+  getConversationSummary = (conversationId: string): string | null => {
+    const conversation = this.conversationsList.find(
+      (c) => c.id === conversationId,
+    );
+    return conversation?.summary ?? null;
+  };
+
+  deleteConversation = (conversationId: string): void => {
+    const idx = this.conversationsList.findIndex(
+      (c) => c.id === conversationId,
+    );
+    if (idx !== -1) this.conversationsList.splice(idx, 1);
+    // Also remove associated messages
+    for (let i = this.messagesList.length - 1; i >= 0; i--) {
+      if (this.messagesList[i].conversationId === conversationId) {
+        this.messagesList.splice(i, 1);
+      }
+    }
+  };
+
+  summariseAndPurge = (conversationId: string): string => {
+    const conversation = this.conversationsList.find(
+      (c) => c.id === conversationId,
+    );
+    if (!conversation) return "";
+
+    const msgs = this.getMessagesByConversation(conversationId);
+    const summary =
+      msgs.length > 0
+        ? `Summary of ${msgs.length} messages about "${conversation.title ?? "untitled"}".`
+        : (conversation.summary ?? "");
+
+    conversation.summary = summary;
+
+    // Purge messages
+    for (let i = this.messagesList.length - 1; i >= 0; i--) {
+      if (this.messagesList[i].conversationId === conversationId) {
+        this.messagesList.splice(i, 1);
+      }
+    }
+
+    return summary;
   };
 
   getChildConfig = (childId: string) => {

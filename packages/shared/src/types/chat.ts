@@ -13,6 +13,7 @@ export interface Conversation {
   id: string;
   childId: string;
   title: string | null;
+  summary: string | null;
   createdAt: string;
   updatedAt: string;
 }
