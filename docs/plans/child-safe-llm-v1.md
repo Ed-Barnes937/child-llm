@@ -137,6 +137,7 @@ On the parent side: the onboarding calibration mechanic (S6) where parents are s
 - [ ] Update system prompt builder to incorporate calibration answers
 - [ ] Build child settings screen (S9a) — preset selector, all 7 sliders, calibration review/edit
 - [ ] Update system prompt builder to incorporate slider values
+- [ ] Wire web app to pass child's slider overrides and calibration answers to the pipeline service in the chat request
 - [ ] Build intent selection screen (S21a) — visual cards for restricted presets
 - [ ] Wire intent selection to show/skip based on interaction_mode slider
 
@@ -351,6 +352,7 @@ PWA configuration (service worker, manifest, install prompt, offline fallback). 
 - [ ] Verify encryption at rest (Fly.io Postgres) and TLS on all connections
 - [ ] Write privacy policy and terms of service pages
 - [ ] Red team guardrails — prompt injection, edge cases, adversarial queries across all presets
+- [ ] Evaluate LlamaGuard 4 via OpenRouter as a purpose-built safety classifier — 14 categories including child exploitation (S4), $0.18/M tokens, same OpenRouter infra. Could replace or supplement GPT-4.1-nano validation
 - [ ] Content finalisation — calibration questions, system prompts, "Inspire me" pool, intent categories
 - [ ] Custom design theme pass — replace Shadcn defaults with product visual identity
 - [ ] End-to-end testing: parent signup → onboarding → child login → chat → flag → parent review

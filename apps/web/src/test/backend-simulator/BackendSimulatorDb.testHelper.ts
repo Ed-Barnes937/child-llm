@@ -38,6 +38,17 @@ export interface MockCalibrationAnswer {
   customAnswer: string | null;
 }
 
+export interface ChatStreamScenario {
+  tokens: string[];
+  flag?: {
+    type: "sensitive" | "blocked" | "validation-failed";
+    reason: string;
+    topics?: string[];
+    childMessage: string;
+    aiResponse?: string;
+  };
+}
+
 export class BackendSimulatorDb {
   readonly endpointBehaviourManager = new EndpointBehaviourManager();
   readonly parents: MockParent[] = [];
@@ -45,6 +56,15 @@ export class BackendSimulatorDb {
   readonly children: MockChild[] = [];
   readonly deviceList: MockDevice[] = [];
   readonly calibrationAnswersList: MockCalibrationAnswer[] = [];
+  chatStreamScenario: ChatStreamScenario | null = null;
+
+  /**
+   * Configure what the mock chat stream endpoint returns.
+   * If not set, defaults to the standard "The sun is a big star..." response.
+   */
+  setChatStreamScenario = (scenario: ChatStreamScenario): void => {
+    this.chatStreamScenario = scenario;
+  };
 
   createParent = (data: {
     name: string;

@@ -89,6 +89,7 @@ All services hosted on Fly.io, London region (UK data residency).
 | ORM | Drizzle |
 | Database | PostgreSQL on Fly.io (London) |
 | Pipeline service | Hono (TypeScript) |
+| Content moderation | obscenity (profanity/slur detection), libphonenumber-js (phone number detection) |
 | LLM provider | OpenRouter (GPT-4o-mini primary, GPT-4.1 nano validation) |
 | Hosting | Fly.io — all services in London region |
 | E2E testing | Playwright |

@@ -72,6 +72,9 @@ export interface ParentSession {
 export interface ChatStreamRequest {
   message: string;
   presetName: PresetName;
+  childId?: string;
+  sliders?: PresetSliders;
+  calibrationAnswers?: CalibrationAnswer[];
   history: { role: string; content: string }[];
 }
 
@@ -83,4 +86,17 @@ export interface ChatStreamError {
   error: string;
 }
 
-export type ChatStreamChunk = ChatStreamToken | ChatStreamError;
+export interface ChatStreamFlag {
+  flag: {
+    type: "sensitive" | "blocked" | "validation-failed";
+    reason: string;
+    topics?: string[];
+    childMessage: string;
+    aiResponse?: string;
+  };
+}
+
+export type ChatStreamChunk =
+  | ChatStreamToken
+  | ChatStreamError
+  | ChatStreamFlag;

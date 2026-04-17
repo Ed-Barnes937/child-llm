@@ -35,6 +35,38 @@ Both commands use `drizzle-kit push` (schema → DB, no migration files). The pr
 
 If `drizzle-kit push` detects tables in the DB that aren't in its schema (and aren't excluded by `tablesFilter`), it opens an interactive prompt. This fails in non-TTY environments (CI, piped input). Keep `tablesFilter` correct in both configs to avoid this.
 
+## Pipeline service
+
+### Pipeline validates responses before sending them
+
+The pipeline makes a **non-streaming** LLM call, validates the full response (blocklist scan + validation model), then emits the validated response as SSE chunks. This adds latency but ensures nothing reaches the child without passing all safety checks.
+
+### Pipeline does not own the database
+
+The pipeline service has no DB connection. When it detects an issue (sensitive topic, blocklist hit, validation failure), it emits a `flag` event in the SSE stream. The web app is responsible for persisting flags to the `flags` table. Do not add Drizzle or DB dependencies to the pipeline.
+
+### Pipeline env loading
+
+The pipeline uses Node's `--env-file=../../.env` flag (in the dev script) to load environment variables from the monorepo root. It does not use `dotenv`. The web app uses Vite's `loadEnv` in its middleware.
+
+### Pipeline request payload is backwards-compatible
+
+The `/chat` endpoint accepts optional `sliders` and `calibrationAnswers` fields. When omitted, it falls back to the preset's default slider values. The web app does not yet send these — it only sends `presetName`, `message`, and `history`.
+
+### Blocklist uses `obscenity` and `libphonenumber-js`
+
+The output blocklist (`apps/pipeline/src/blocklist.ts`) uses the `obscenity` library for profanity/explicit content detection and `libphonenumber-js` for phone number detection. Hand-rolled regex is only used for dangerous content patterns and URL/email detection.
+
+Key design decisions:
+
+- **Educational terms excluded**: `penis`, `vagina`, and `sex` are removed from `obscenity`'s default dataset. These are legitimate in age-appropriate explanations — the sensitive topics system + validation model handle appropriateness instead.
+- **Custom whitelists**: The `obscenity` default dataset doesn't whitelist all common words (e.g. `cockpit`, `cocktail`). These are added as extra whitelisted terms on the matcher. If you encounter new false positives, add them there.
+- **Phone number validation is country-aware**: `libphonenumber-js` is configured with `'GB'` as the default country. It correctly ignores postcodes and scientific numbers but won't catch numbers that fail validation against known ranges (e.g. Ofcom reserved ranges).
+
+### Pipeline unit tests use vitest
+
+The pipeline has its own vitest setup (`pnpm --filter @child-safe-llm/pipeline test`). These are fast unit tests for pure functions (prompt builder, blocklist, sensitive topic detection, validation parsing, context anchoring, depth tracking). They are separate from the Playwright CT tests in the web app.
+
 ## Testing architecture
 
 Tests use Playwright experimental component testing (`@playwright/experimental-ct-react`), not e2e tests against a running server. Test files use the `.iwft.tsx` extension and live in `apps/web/src/test/flows/`.
@@ -60,6 +92,10 @@ Playwright's route handlers fire last-in-first-out. In `BackendSimulator.install
 - **Most tests**: install BackendSimulator _after_ `mount()` — `page.route()` handlers only work reliably after CT mount
 - **Exception**: when a component fires API calls during initial render (e.g. PIN login reads device token on mount), install _before_ mount and set up any required localStorage before mount too
 - You cannot call `mount()` twice in Playwright CT (React root already exists)
+
+### BackendSimulator chat scenarios are configurable
+
+Use `backendSimulator.db.setChatStreamScenario({ tokens, flag })` to control what the mock chat endpoint returns. If not set, it defaults to the standard "The sun is a big star..." response. Set a `flag` to simulate pipeline guardrail events (sensitive, blocked, validation-failed).
 
 ### BackendSimulator does not catch real database errors
 
