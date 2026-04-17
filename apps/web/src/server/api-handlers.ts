@@ -277,6 +277,7 @@ export const handleGetConversations = async (childId: string) => {
     .select({
       id: conversations.id,
       title: conversations.title,
+      summary: conversations.summary,
       createdAt: conversations.createdAt,
       updatedAt: conversations.updatedAt,
     })
@@ -287,6 +288,7 @@ export const handleGetConversations = async (childId: string) => {
   return rows.map((r) => ({
     id: r.id,
     title: r.title,
+    summary: r.summary,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
   }));
@@ -366,4 +368,70 @@ export const handleCreateFlag = async (data: {
     .returning();
 
   return { id: flag.id };
+};
+
+// --- Summarisation & Purge ---
+
+export const handleGetConversationSummary = async (conversationId: string) => {
+  const db = getDb();
+  const [conversation] = await db
+    .select({ summary: conversations.summary })
+    .from(conversations)
+    .where(eq(conversations.id, conversationId))
+    .limit(1);
+
+  return { summary: conversation?.summary ?? null };
+};
+
+export const handleDeleteConversation = async (conversationId: string) => {
+  const db = getDb();
+  await db.delete(conversations).where(eq(conversations.id, conversationId));
+  return { success: true };
+};
+
+export const handleSummariseAndPurge = async (conversationId: string) => {
+  const db = getDb();
+  const pipelineUrl = process.env.PIPELINE_URL ?? "http://localhost:3001";
+  const pipelineKey = process.env.PIPELINE_API_KEY ?? "dev-pipeline-key";
+
+  const rows = await db
+    .select({ role: messages.role, content: messages.content })
+    .from(messages)
+    .where(eq(messages.conversationId, conversationId))
+    .orderBy(messages.createdAt);
+
+  if (rows.length === 0) {
+    const [existing] = await db
+      .select({ summary: conversations.summary })
+      .from(conversations)
+      .where(eq(conversations.id, conversationId))
+      .limit(1);
+    return { summary: existing?.summary ?? "" };
+  }
+
+  const response = await fetch(`${pipelineUrl}/summarise`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-pipeline-key": pipelineKey,
+    },
+    body: JSON.stringify({
+      messages: rows.map((r) => ({ role: r.role, content: r.content })),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to generate summary");
+  }
+
+  const { summary } = (await response.json()) as { summary: string };
+
+  await db
+    .update(conversations)
+    .set({ summary })
+    .where(eq(conversations.id, conversationId));
+
+  await db.delete(messages).where(eq(messages.conversationId, conversationId));
+
+  return { summary };
 };

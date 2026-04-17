@@ -3,6 +3,7 @@ import type { Page, Route as PlaywrightRoute } from "@playwright/test";
 export enum Method {
   GET = "GET",
   POST = "POST",
+  DELETE = "DELETE",
 }
 
 export interface HttpRequest<Body = undefined> {
@@ -53,6 +54,15 @@ export const post = <Body, Result extends RouteResponse>(
   method: Method.POST,
   urlPattern,
   handler: handler as unknown as (req: HttpRequest<unknown>) => RouteResponse,
+});
+
+export const del = <Result extends RouteResponse>(
+  urlPattern: string,
+  handler: (req: HttpRequest) => Result,
+): RouteDefinition => ({
+  method: Method.DELETE,
+  urlPattern,
+  handler: handler as (req: HttpRequest<unknown>) => RouteResponse,
 });
 
 const convertUrlPatternToRegex = (urlPattern: string): RegExp => {

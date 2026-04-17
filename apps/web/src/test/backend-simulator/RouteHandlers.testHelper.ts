@@ -4,7 +4,7 @@ import type {
   HttpRequest,
   RouteResponse,
 } from "./Route.testHelper";
-import { get, post } from "./Route.testHelper";
+import { get, post, del } from "./Route.testHelper";
 import { EndpointKey } from "./Endpoint.testHelper";
 import { handleEndpointBehaviour } from "./EndpointBehaviourManager.testHelper";
 import type {
@@ -319,6 +319,29 @@ export const createConversationRoutes = (
   db: BackendSimulatorDb,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): RouteDefinition<any>[] => [
+  get("/conversations/:conversationId/summary", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(
+        EndpointKey.GET_CONVERSATION_SUMMARY,
+      ),
+      () => {
+        const { conversationId } = req.pathParams;
+        return json({ summary: db.getConversationSummary(conversationId) });
+      },
+    ),
+  ),
+
+  post("/conversations/:conversationId/summarise", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(EndpointKey.SUMMARISE_AND_PURGE),
+      () => {
+        const { conversationId } = req.pathParams;
+        const summary = db.summariseAndPurge(conversationId);
+        return json({ summary });
+      },
+    ),
+  ),
+
   post(
     "/conversations",
     (req: HttpRequest<{ childId: string; title?: string }>) =>
@@ -376,6 +399,17 @@ export const createConversationRoutes = (
           return json(message);
         },
       ),
+  ),
+
+  del("/conversations/:conversationId", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(EndpointKey.DELETE_CONVERSATION),
+      () => {
+        const { conversationId } = req.pathParams;
+        db.deleteConversation(conversationId);
+        return json({ success: true });
+      },
+    ),
   ),
 ];
 

@@ -118,6 +118,7 @@ export interface CreateConversationResponse {
 export interface ConversationSummary {
   id: string;
   title: string | null;
+  summary: string | null;
   createdAt: string;
   updatedAt: string;
   lastMessage?: string;

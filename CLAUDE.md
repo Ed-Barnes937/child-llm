@@ -107,6 +107,20 @@ Playwright's route handlers fire last-in-first-out. In `BackendSimulator.install
 - **Exception**: when a component fires API calls during initial render (e.g. PIN login reads device token on mount), install _before_ mount and set up any required localStorage before mount too
 - You cannot call `mount()` twice in Playwright CT (React root already exists)
 
+### BackendSimulator supports DELETE routes
+
+The route helper supports GET, POST, and DELETE methods. Use the `del()` helper to define DELETE route handlers.
+
+## Conversation summarisation & retention
+
+### Summarisation flows through the pipeline
+
+The web app owns the database; the pipeline owns LLM calls. To summarise a conversation, the web app fetches messages, sends them to the pipeline's `/summarise` endpoint, stores the returned summary on the conversation record, then deletes the raw messages. The pipeline's `/summarise` endpoint is a simple non-streaming JSON endpoint (not SSE like `/chat`).
+
+### Summary replaces messages after purge
+
+When a conversation has a `summary` but no messages, the `$conversationId` route shows a read-only summary view with a delete button instead of the chat interface. The conversation still appears in the home page list.
+
 ### BackendSimulator does not catch real database errors
 
 Because tests use an in-memory mock (`BackendSimulatorDb`) and never connect to Postgres, missing tables, connection failures, and schema mismatches are invisible to the test suite. Always verify new schema changes work against a real database manually or via smoke tests.

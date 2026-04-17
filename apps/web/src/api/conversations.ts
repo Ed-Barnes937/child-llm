@@ -61,4 +61,29 @@ export const conversationsApi = {
     );
     return res.json();
   },
+
+  getSummary: async (
+    conversationId: string,
+  ): Promise<{ summary: string | null }> => {
+    const res = await fetch(`/api/conversations/${conversationId}/summary`);
+    return res.json();
+  },
+
+  deleteConversation: async (
+    conversationId: string,
+  ): Promise<{ success: boolean }> => {
+    const res = await fetch(`/api/conversations/${conversationId}`, {
+      method: "DELETE",
+    });
+    return res.json();
+  },
+
+  summariseAndPurge: async (
+    conversationId: string,
+  ): Promise<{ summary: string }> => {
+    const res = await fetch(`/api/conversations/${conversationId}/summarise`, {
+      method: "POST",
+    });
+    return res.json();
+  },
 };
