@@ -1,5 +1,10 @@
 import { EndpointBehaviourManager } from "./EndpointBehaviourManager.testHelper";
-import type { PresetName, CalibrationAnswer } from "@child-safe-llm/shared";
+import {
+  PRESET_DEFINITIONS,
+  type PresetName,
+  type CalibrationAnswer,
+  type FlagType,
+} from "@child-safe-llm/shared";
 
 export interface MockParent {
   id: string;
@@ -26,6 +31,38 @@ export interface MockDevice {
 export interface MockSession {
   userId: string;
   token: string;
+}
+
+export interface MockConversation {
+  id: string;
+  childId: string;
+  title: string | null;
+  summary: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MockMessage {
+  id: string;
+  conversationId: string;
+  role: string;
+  content: string;
+  flagged: boolean;
+  createdAt: string;
+}
+
+export interface MockFlag {
+  id: string;
+  childId: string;
+  conversationId: string | null;
+  messageId: string | null;
+  type: FlagType;
+  reason: string;
+  childMessage: string | null;
+  aiResponse: string | null;
+  topics: string | null;
+  reviewed: boolean;
+  createdAt: string;
 }
 
 let nextId = 1;
@@ -56,15 +93,10 @@ export class BackendSimulatorDb {
   readonly children: MockChild[] = [];
   readonly deviceList: MockDevice[] = [];
   readonly calibrationAnswersList: MockCalibrationAnswer[] = [];
-  chatStreamScenario: ChatStreamScenario | null = null;
-
-  /**
-   * Configure what the mock chat stream endpoint returns.
-   * If not set, defaults to the standard "The sun is a big star..." response.
-   */
-  setChatStreamScenario = (scenario: ChatStreamScenario): void => {
-    this.chatStreamScenario = scenario;
-  };
+  readonly conversationsList: MockConversation[] = [];
+  readonly messagesList: MockMessage[] = [];
+  readonly flagsList: MockFlag[] = [];
+  private chatStreamScenario: ChatStreamScenario | null = null;
 
   createParent = (data: {
     name: string;
@@ -165,5 +197,164 @@ export class BackendSimulatorDb {
 
   getCalibrationAnswers = (childId: string): MockCalibrationAnswer[] => {
     return this.calibrationAnswersList.filter((a) => a.childId === childId);
+  };
+
+  // --- Conversations ---
+
+  setChatStreamScenario = (scenario: ChatStreamScenario): void => {
+    this.chatStreamScenario = scenario;
+  };
+
+  getChatStreamScenario = (): ChatStreamScenario | null => {
+    return this.chatStreamScenario;
+  };
+
+  createConversation = (data: {
+    childId: string;
+    title?: string;
+    summary?: string;
+  }): MockConversation => {
+    const now = new Date().toISOString();
+    const conversation: MockConversation = {
+      id: generateId(),
+      childId: data.childId,
+      title: data.title ?? null,
+      summary: data.summary ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.conversationsList.push(conversation);
+    return conversation;
+  };
+
+  getConversationsByChild = (childId: string): MockConversation[] => {
+    return this.conversationsList
+      .filter((c) => c.childId === childId)
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      );
+  };
+
+  getMessagesByConversation = (conversationId: string): MockMessage[] => {
+    return this.messagesList
+      .filter((m) => m.conversationId === conversationId)
+      .sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+  };
+
+  saveMessage = (data: {
+    conversationId: string;
+    role: string;
+    content: string;
+    flagged?: boolean;
+  }): MockMessage => {
+    const message: MockMessage = {
+      id: generateId(),
+      conversationId: data.conversationId,
+      role: data.role,
+      content: data.content,
+      flagged: data.flagged ?? false,
+      createdAt: new Date().toISOString(),
+    };
+    this.messagesList.push(message);
+
+    const conversation = this.conversationsList.find(
+      (c) => c.id === data.conversationId,
+    );
+    if (conversation) {
+      conversation.updatedAt = new Date().toISOString();
+    }
+
+    return message;
+  };
+
+  getConversationSummary = (conversationId: string): string | null => {
+    const conversation = this.conversationsList.find(
+      (c) => c.id === conversationId,
+    );
+    return conversation?.summary ?? null;
+  };
+
+  deleteConversation = (conversationId: string): void => {
+    const idx = this.conversationsList.findIndex(
+      (c) => c.id === conversationId,
+    );
+    if (idx !== -1) this.conversationsList.splice(idx, 1);
+    // Also remove associated messages
+    for (let i = this.messagesList.length - 1; i >= 0; i--) {
+      if (this.messagesList[i].conversationId === conversationId) {
+        this.messagesList.splice(i, 1);
+      }
+    }
+  };
+
+  summariseAndPurge = (conversationId: string): string => {
+    const conversation = this.conversationsList.find(
+      (c) => c.id === conversationId,
+    );
+    if (!conversation) return "";
+
+    const msgs = this.getMessagesByConversation(conversationId);
+    const summary =
+      msgs.length > 0
+        ? `Summary of ${msgs.length} messages about "${conversation.title ?? "untitled"}".`
+        : (conversation.summary ?? "");
+
+    conversation.summary = summary;
+
+    // Purge messages
+    for (let i = this.messagesList.length - 1; i >= 0; i--) {
+      if (this.messagesList[i].conversationId === conversationId) {
+        this.messagesList.splice(i, 1);
+      }
+    }
+
+    return summary;
+  };
+
+  getChildConfig = (childId: string) => {
+    const child = this.findChildById(childId);
+    const sliders = child
+      ? PRESET_DEFINITIONS[child.presetName].sliders
+      : PRESET_DEFINITIONS["confident-reader"].sliders;
+    const answers = this.getCalibrationAnswers(childId);
+    return {
+      sliders,
+      calibrationAnswers: answers.map((a) => ({
+        questionId: a.questionId,
+        selectedLevel: a.selectedLevel,
+        customAnswer: a.customAnswer,
+      })),
+    };
+  };
+
+  createFlag = (data: {
+    childId: string;
+    conversationId?: string;
+    messageId?: string;
+    type: FlagType;
+    reason: string;
+    childMessage?: string;
+    aiResponse?: string;
+    topics?: string[];
+  }): MockFlag => {
+    const flag: MockFlag = {
+      id: generateId(),
+      childId: data.childId,
+      conversationId: data.conversationId ?? null,
+      messageId: data.messageId ?? null,
+      type: data.type,
+      reason: data.reason,
+      childMessage: data.childMessage ?? null,
+      aiResponse: data.aiResponse ?? null,
+      topics: data.topics ? JSON.stringify(data.topics) : null,
+      reviewed: false,
+      createdAt: new Date().toISOString(),
+    };
+    this.flagsList.push(flag);
+    return flag;
   };
 }

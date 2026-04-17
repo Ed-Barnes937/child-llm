@@ -61,6 +61,19 @@ export const serverMiddleware = (): Plugin => {
             const handlers = await server.ssrLoadModule(
               "/src/server/api-handlers.ts",
             );
+
+            // GET /api/children/:childId/config
+            const configMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/config$/,
+            );
+            if (configMatch && req.method === "GET") {
+              const childId = configMatch[1];
+              const result = await handlers.handleGetChildConfig(childId);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
             const body = await readBody(req);
 
             if (req.method === "POST") {
@@ -71,7 +84,7 @@ export const serverMiddleware = (): Plugin => {
               return;
             }
 
-            // GET
+            // GET /api/children?parentId=x
             const parentId = url.searchParams.get("parentId");
             if (!parentId) {
               res.statusCode = 400;
@@ -120,6 +133,115 @@ export const serverMiddleware = (): Plugin => {
               res.end(JSON.stringify(result));
               return;
             }
+          }
+
+          // Flags API
+          if (req.url?.startsWith("/api/flags")) {
+            const handlers = await server.ssrLoadModule(
+              "/src/server/api-handlers.ts",
+            );
+
+            if (req.method === "POST") {
+              const body = await readBody(req);
+              const data = JSON.parse(body);
+              const result = await handlers.handleCreateFlag(data);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+          }
+
+          // Conversations API
+          if (req.url?.startsWith("/api/conversations")) {
+            const handlers = await server.ssrLoadModule(
+              "/src/server/api-handlers.ts",
+            );
+
+            // GET /api/conversations/:id/summary
+            const summaryMatch = url.pathname.match(
+              /^\/api\/conversations\/([^/]+)\/summary$/,
+            );
+            if (summaryMatch && req.method === "GET") {
+              const result = await handlers.handleGetConversationSummary(
+                summaryMatch[1],
+              );
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // POST /api/conversations/:id/summarise
+            const summariseMatch = url.pathname.match(
+              /^\/api\/conversations\/([^/]+)\/summarise$/,
+            );
+            if (summariseMatch && req.method === "POST") {
+              const result = await handlers.handleSummariseAndPurge(
+                summariseMatch[1],
+              );
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // GET/POST /api/conversations/:id/messages
+            const messagesMatch = url.pathname.match(
+              /^\/api\/conversations\/([^/]+)\/messages$/,
+            );
+            if (messagesMatch) {
+              const conversationId = messagesMatch[1];
+              if (req.method === "POST") {
+                const body = await readBody(req);
+                const data = JSON.parse(body);
+                const result = await handlers.handleSaveMessage(
+                  conversationId,
+                  data,
+                );
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify(result));
+                return;
+              }
+              // GET
+              const result =
+                await handlers.handleGetConversationMessages(conversationId);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // DELETE /api/conversations/:id
+            const deleteMatch = url.pathname.match(
+              /^\/api\/conversations\/([^/]+)$/,
+            );
+            if (deleteMatch && req.method === "DELETE") {
+              const result = await handlers.handleDeleteConversation(
+                deleteMatch[1],
+              );
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // POST /api/conversations
+            if (req.method === "POST") {
+              const body = await readBody(req);
+              const data = JSON.parse(body);
+              const result = await handlers.handleCreateConversation(data);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // GET /api/conversations?childId=x
+            const childId = url.searchParams.get("childId");
+            if (!childId) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: "childId required" }));
+              return;
+            }
+            const result = await handlers.handleGetConversations(childId);
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify(result));
+            return;
           }
 
           // Chat streaming API

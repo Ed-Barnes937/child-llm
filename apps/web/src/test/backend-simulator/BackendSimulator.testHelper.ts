@@ -7,6 +7,8 @@ import {
   createChildrenRoutes,
   createChildAuthRoutes,
   createChatRoutes,
+  createConversationRoutes,
+  createFlagRoutes,
 } from "./RouteHandlers.testHelper";
 
 export class BackendSimulator {
@@ -17,8 +19,16 @@ export class BackendSimulator {
     const childrenRoutes = createChildrenRoutes(this.db);
     const childAuthRoutes = createChildAuthRoutes(this.db);
     const chatRoutes = createChatRoutes(this.db);
+    const conversationRoutes = createConversationRoutes(this.db);
+    const flagRoutes = createFlagRoutes(this.db);
 
-    const allRoutes = [...childrenRoutes, ...childAuthRoutes, ...chatRoutes];
+    const allRoutes = [
+      ...childrenRoutes,
+      ...childAuthRoutes,
+      ...chatRoutes,
+      ...conversationRoutes,
+      ...flagRoutes,
+    ];
 
     // Register in specificity order: general first, then specific.
     // page.route() handlers fire LIFO, so /api/auth (registered last)

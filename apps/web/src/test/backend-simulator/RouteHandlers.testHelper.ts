@@ -4,13 +4,14 @@ import type {
   HttpRequest,
   RouteResponse,
 } from "./Route.testHelper";
-import { get, post } from "./Route.testHelper";
+import { get, post, del } from "./Route.testHelper";
 import { EndpointKey } from "./Endpoint.testHelper";
 import { handleEndpointBehaviour } from "./EndpointBehaviourManager.testHelper";
 import type {
   PresetName,
   PresetSliders,
   CalibrationAnswer,
+  FlagType,
 } from "@child-safe-llm/shared";
 
 const json = (data: unknown, status = 200): RouteResponse => ({
@@ -124,6 +125,16 @@ export const createChildrenRoutes = (
   db: BackendSimulatorDb,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): RouteDefinition<any>[] => [
+  get("/children/:childId/config", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(EndpointKey.GET_CHILD_CONFIG),
+      () => {
+        const { childId } = req.pathParams;
+        return json(db.getChildConfig(childId));
+      },
+    ),
+  ),
+
   get("/children", (req: HttpRequest) =>
     handleEndpointBehaviour(
       db.endpointBehaviourManager.getBehaviour(EndpointKey.GET_CHILDREN),
@@ -264,7 +275,7 @@ export const createChatRoutes = (
     handleEndpointBehaviour(
       db.endpointBehaviourManager.getBehaviour(EndpointKey.CHAT_STREAM),
       () => {
-        const scenario = db.chatStreamScenario;
+        const scenario = db.getChatStreamScenario();
         const tokens = scenario?.tokens ?? [
           "The ",
           "sun ",
@@ -279,10 +290,8 @@ export const createChatRoutes = (
           "and ",
           "warmth.",
         ];
-
         const sseLines: string[] = [];
 
-        // Emit flag event if present in scenario
         if (scenario?.flag) {
           sseLines.push(`data: ${JSON.stringify({ flag: scenario.flag })}\n\n`);
         }
@@ -303,5 +312,131 @@ export const createChatRoutes = (
         };
       },
     ),
+  ),
+];
+
+export const createConversationRoutes = (
+  db: BackendSimulatorDb,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): RouteDefinition<any>[] => [
+  get("/conversations/:conversationId/summary", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(
+        EndpointKey.GET_CONVERSATION_SUMMARY,
+      ),
+      () => {
+        const { conversationId } = req.pathParams;
+        return json({ summary: db.getConversationSummary(conversationId) });
+      },
+    ),
+  ),
+
+  post("/conversations/:conversationId/summarise", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(EndpointKey.SUMMARISE_AND_PURGE),
+      () => {
+        const { conversationId } = req.pathParams;
+        const summary = db.summariseAndPurge(conversationId);
+        return json({ summary });
+      },
+    ),
+  ),
+
+  post(
+    "/conversations",
+    (req: HttpRequest<{ childId: string; title?: string }>) =>
+      handleEndpointBehaviour(
+        db.endpointBehaviourManager.getBehaviour(
+          EndpointKey.CREATE_CONVERSATION,
+        ),
+        () => {
+          const conversation = db.createConversation(req.body);
+          return json(conversation);
+        },
+      ),
+  ),
+
+  get("/conversations", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(EndpointKey.GET_CONVERSATIONS),
+      () => {
+        const childId = req.queryParams["childId"];
+        if (!childId) return json({ error: "childId required" }, 400);
+        return json(db.getConversationsByChild(childId));
+      },
+    ),
+  ),
+
+  get("/conversations/:conversationId/messages", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(
+        EndpointKey.GET_CONVERSATION_MESSAGES,
+      ),
+      () => {
+        const { conversationId } = req.pathParams;
+        return json(db.getMessagesByConversation(conversationId));
+      },
+    ),
+  ),
+
+  post(
+    "/conversations/:conversationId/messages",
+    (
+      req: HttpRequest<{
+        role: string;
+        content: string;
+        flagged?: boolean;
+      }>,
+    ) =>
+      handleEndpointBehaviour(
+        db.endpointBehaviourManager.getBehaviour(EndpointKey.SAVE_MESSAGE),
+        () => {
+          const { conversationId } = req.pathParams;
+          const message = db.saveMessage({
+            conversationId,
+            ...req.body,
+          });
+          return json(message);
+        },
+      ),
+  ),
+
+  del("/conversations/:conversationId", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(EndpointKey.DELETE_CONVERSATION),
+      () => {
+        const { conversationId } = req.pathParams;
+        db.deleteConversation(conversationId);
+        return json({ success: true });
+      },
+    ),
+  ),
+];
+
+export const createFlagRoutes = (
+  db: BackendSimulatorDb,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): RouteDefinition<any>[] => [
+  post(
+    "/flags",
+    (
+      req: HttpRequest<{
+        childId: string;
+        conversationId?: string;
+        messageId?: string;
+        type: FlagType;
+        reason: string;
+        childMessage?: string;
+        aiResponse?: string;
+        topics?: string[];
+      }>,
+    ) =>
+      handleEndpointBehaviour(
+        db.endpointBehaviourManager.getBehaviour(EndpointKey.CREATE_FLAG),
+        () => {
+          const flag = db.createFlag(req.body);
+          return json({ id: flag.id });
+        },
+      ),
   ),
 ];
