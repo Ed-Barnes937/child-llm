@@ -14,7 +14,7 @@ Child-safe LLM — a parent-controlled chat interface for children. Monorepo wit
 
 ### Two Drizzle configs manage separate table sets
 
-- `packages/db/drizzle.config.ts` — app tables (children, devices, presets, calibration_answers). Uses `tablesFilter` to **exclude** Better Auth tables.
+- `packages/db/drizzle.config.ts` — app tables (children, devices, presets, calibration_answers, conversations, messages, flags). Uses `tablesFilter` to **exclude** Better Auth tables.
 - `apps/web/drizzle-auth.config.ts` — Better Auth tables (user, session, account, verification). Uses `tablesFilter` to **include only** auth tables.
 
 This split exists because Better Auth manages its own schema independently. Do not add auth tables to the db package schema or vice versa.
@@ -67,6 +67,20 @@ Key design decisions:
 
 The pipeline has its own vitest setup (`pnpm --filter @child-safe-llm/pipeline test`). These are fast unit tests for pure functions (prompt builder, blocklist, sensitive topic detection, validation parsing, context anchoring, depth tracking). They are separate from the Playwright CT tests in the web app.
 
+## Conversation persistence
+
+### Messages are saved after streaming completes
+
+The chat page creates a conversation on first message, saves the child's message immediately, then accumulates the AI response from SSE tokens. The full AI message is saved to the DB only after the stream finishes. This avoids partial writes.
+
+### Flags are persisted by the web app, not the pipeline
+
+The pipeline emits `flag` SSE events (sensitive, blocked, validation-failed) but has no DB connection. The web app's chat page receives these events and persists them to the `flags` table via the API. Flags reference their conversation and are linked to the child.
+
+### BackendSimulator chat scenarios are configurable
+
+Use `backendSimulator.db.setChatStreamScenario({ tokens, flag })` to control what the mock chat endpoint returns. If not set, it defaults to the standard "The sun is a big star..." response. Set a `flag` to simulate pipeline guardrail events.
+
 ## Testing architecture
 
 Tests use Playwright experimental component testing (`@playwright/experimental-ct-react`), not e2e tests against a running server. Test files use the `.iwft.tsx` extension and live in `apps/web/src/test/flows/`.
@@ -92,10 +106,6 @@ Playwright's route handlers fire last-in-first-out. In `BackendSimulator.install
 - **Most tests**: install BackendSimulator _after_ `mount()` — `page.route()` handlers only work reliably after CT mount
 - **Exception**: when a component fires API calls during initial render (e.g. PIN login reads device token on mount), install _before_ mount and set up any required localStorage before mount too
 - You cannot call `mount()` twice in Playwright CT (React root already exists)
-
-### BackendSimulator chat scenarios are configurable
-
-Use `backendSimulator.db.setChatStreamScenario({ tokens, flag })` to control what the mock chat endpoint returns. If not set, it defaults to the standard "The sun is a big star..." response. Set a `flag` to simulate pipeline guardrail events (sensitive, blocked, validation-failed).
 
 ### BackendSimulator does not catch real database errors
 

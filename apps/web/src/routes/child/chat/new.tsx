@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getChildSession } from "@/lib/child-session";
 import { chatApi } from "@/api/chat";
+import { conversationsApi } from "@/api/conversations";
 
 interface Message {
   role: "child" | "ai";
   content: string;
+  flagged?: boolean;
 }
 
 const ChatPage = () => {
@@ -17,6 +19,7 @@ const ChatPage = () => {
   const [streaming, setStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const childSession = useRef(getChildSession());
+  const conversationId = useRef<string | null>(null);
 
   useEffect(() => {
     if (!childSession.current) {
@@ -27,6 +30,39 @@ const ChatPage = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const ensureConversation = async (firstMessage: string): Promise<string> => {
+    if (conversationId.current) return conversationId.current;
+
+    const title = firstMessage.slice(0, 100);
+    const conversation = await conversationsApi.create({
+      childId: childSession.current!.id,
+      title,
+    });
+    conversationId.current = conversation.id;
+    return conversation.id;
+  };
+
+  const persistFlag = async (flag: {
+    type: "sensitive" | "blocked" | "validation-failed";
+    reason: string;
+    topics?: string[];
+    childMessage: string;
+    aiResponse?: string;
+  }) => {
+    const child = childSession.current;
+    if (!child) return;
+
+    await conversationsApi.createFlag({
+      childId: child.id,
+      conversationId: conversationId.current ?? undefined,
+      type: flag.type,
+      reason: flag.reason,
+      childMessage: flag.childMessage,
+      aiResponse: flag.aiResponse,
+      topics: flag.topics,
+    });
+  };
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -40,10 +76,16 @@ const ChatPage = () => {
       setInput("");
       setStreaming(true);
 
-      // Add a placeholder for the AI response
       setMessages([...newMessages, { role: "ai", content: "" }]);
 
       try {
+        const convoId = await ensureConversation(text);
+
+        await conversationsApi.saveMessage(convoId, {
+          role: "child",
+          content: text,
+        });
+
         const stream = chatApi.stream({
           message: text,
           presetName: childSession.current?.presetName ?? "confident-reader",
@@ -52,6 +94,9 @@ const ChatPage = () => {
             content: m.content,
           })),
         });
+
+        let aiContent = "";
+        let wasFlagged = false;
 
         for await (const chunk of stream) {
           if ("error" in chunk) {
@@ -67,13 +112,13 @@ const ChatPage = () => {
           }
 
           if ("flag" in chunk) {
-            // Flag received from pipeline — will be persisted by the web
-            // app in a future phase. For now, just log it.
-            console.log("[Pipeline flag]", chunk.flag);
+            wasFlagged = true;
+            persistFlag(chunk.flag);
             continue;
           }
 
           if ("token" in chunk) {
+            aiContent += chunk.token;
             setMessages((prev) => {
               const updated = [...prev];
               const last = updated[updated.length - 1];
@@ -84,6 +129,14 @@ const ChatPage = () => {
               return updated;
             });
           }
+        }
+
+        if (aiContent) {
+          await conversationsApi.saveMessage(convoId, {
+            role: "ai",
+            content: aiContent,
+            flagged: wasFlagged,
+          });
         }
       } catch {
         setMessages((prev) => {
