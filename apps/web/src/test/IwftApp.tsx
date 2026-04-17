@@ -19,6 +19,7 @@ import { Route as DashboardRouteImport } from "../routes/parent/dashboard";
 import { Route as ChildLoginRouteImport } from "../routes/child/login";
 import { Route as ChildHomeRouteImport } from "../routes/child/home";
 import { Route as ChatNewRouteImport } from "../routes/child/chat/new";
+import { Route as ChatContinueRouteImport } from "../routes/child/chat/$conversationId";
 
 // Clean root route: no <html>/<body>/<Scripts>, just renders children
 const testRootRoute = createRootRoute({
@@ -74,6 +75,12 @@ const chatNewRoute = createRoute({
   component: ChatNewRouteImport.options.component,
 });
 
+const chatContinueRoute = createRoute({
+  getParentRoute: () => testRootRoute,
+  path: "/child/chat/$conversationId",
+  component: ChatContinueRouteImport.options.component,
+});
+
 const testRouteTree = testRootRoute.addChildren([
   indexRoute,
   registerRoute,
@@ -83,6 +90,7 @@ const testRouteTree = testRootRoute.addChildren([
   childLoginRoute,
   childHomeRoute,
   chatNewRoute,
+  chatContinueRoute,
 ]);
 
 interface IwftAppProps {

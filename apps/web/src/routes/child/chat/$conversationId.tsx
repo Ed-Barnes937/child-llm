@@ -6,12 +6,7 @@ import { getChildSession } from "@/lib/child-session";
 import { chatApi } from "@/api/chat";
 import { conversationsApi } from "@/api/conversations";
 import type { PresetSliders, CalibrationAnswer } from "@child-safe-llm/shared";
-import {
-  INTENT_CATEGORIES,
-  getRandomTopic,
-  SESSION_LIMIT_MAP,
-  INSPIRE_SESSION_KEY,
-} from "@/lib/inspire-me";
+import { SESSION_LIMIT_MAP } from "@/lib/inspire-me";
 
 interface Message {
   role: "child" | "ai";
@@ -19,12 +14,13 @@ interface Message {
   flagged?: boolean;
 }
 
-const ChatPage = () => {
+const ContinueChatPage = () => {
   const navigate = useNavigate();
+  const { conversationId } = Route.useParams();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
-  const [showIntentSelection, setShowIntentSelection] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [sliders, setSliders] = useState<PresetSliders | null>(null);
   const [calibrationAnswers, setCalibrationAnswers] = useState<
     CalibrationAnswer[]
@@ -32,18 +28,8 @@ const ChatPage = () => {
   const [reportedMessages, setReportedMessages] = useState<Set<number>>(
     new Set(),
   );
-  const [autoInspireTopic] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    const topic = sessionStorage.getItem(INSPIRE_SESSION_KEY);
-    if (topic) {
-      sessionStorage.removeItem(INSPIRE_SESSION_KEY);
-      return topic;
-    }
-    return null;
-  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const childSession = useRef(getChildSession());
-  const conversationId = useRef<string | null>(null);
   const messageCount = useRef(0);
 
   useEffect(() => {
@@ -52,19 +38,36 @@ const ChatPage = () => {
       return;
     }
 
-    conversationsApi
-      .getChildConfig(childSession.current.id)
-      .then((config) => {
-        setSliders(config.sliders);
-        setCalibrationAnswers(config.calibrationAnswers);
-        if (config.sliders.interactionMode <= 3 && !autoInspireTopic) {
-          setShowIntentSelection(true);
+    const load = async () => {
+      try {
+        const [existingMessages, config] = await Promise.all([
+          conversationsApi.getMessages(conversationId),
+          conversationsApi
+            .getChildConfig(childSession.current!.id)
+            .catch(() => null),
+        ]);
+
+        const loaded: Message[] = existingMessages.map((m) => ({
+          role: m.role as "child" | "ai",
+          content: m.content,
+          flagged: m.flagged,
+        }));
+        setMessages(loaded);
+        messageCount.current = loaded.length;
+
+        if (config) {
+          setSliders(config.sliders);
+          setCalibrationAnswers(config.calibrationAnswers);
         }
-      })
-      .catch(() => {
-        // Fall through without config — chat still works with preset defaults
-      });
-  }, [navigate, autoInspireTopic]);
+      } catch {
+        // Fall through — empty conversation
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [navigate, conversationId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -80,18 +83,6 @@ const ChatPage = () => {
     !isAtLimit &&
     isFinite(sessionLimit);
 
-  const ensureConversation = async (firstMessage: string): Promise<string> => {
-    if (conversationId.current) return conversationId.current;
-
-    const title = firstMessage.slice(0, 100);
-    const conversation = await conversationsApi.create({
-      childId: childSession.current!.id,
-      title,
-    });
-    conversationId.current = conversation.id;
-    return conversation.id;
-  };
-
   const persistFlag = async (flag: {
     type: "sensitive" | "blocked" | "validation-failed";
     reason: string;
@@ -104,7 +95,7 @@ const ChatPage = () => {
 
     await conversationsApi.createFlag({
       childId: child.id,
-      conversationId: conversationId.current ?? undefined,
+      conversationId,
       type: flag.type,
       reason: flag.reason,
       childMessage: flag.childMessage,
@@ -124,7 +115,7 @@ const ChatPage = () => {
 
     await conversationsApi.createFlag({
       childId: child.id,
-      conversationId: conversationId.current ?? undefined,
+      conversationId,
       type: "reported",
       reason: "Child reported unsatisfactory answer",
       childMessage: childMsg?.content,
@@ -136,7 +127,6 @@ const ChatPage = () => {
     async (text: string) => {
       if (!text.trim() || streaming || isAtLimit) return;
 
-      setShowIntentSelection(false);
       messageCount.current += 1;
 
       const newMessages: Message[] = [
@@ -150,9 +140,7 @@ const ChatPage = () => {
       setMessages([...newMessages, { role: "ai", content: "" }]);
 
       try {
-        const convoId = await ensureConversation(text);
-
-        await conversationsApi.saveMessage(convoId, {
+        await conversationsApi.saveMessage(conversationId, {
           role: "child",
           content: text,
         });
@@ -207,7 +195,7 @@ const ChatPage = () => {
 
         if (aiContent) {
           messageCount.current += 1;
-          await conversationsApi.saveMessage(convoId, {
+          await conversationsApi.saveMessage(conversationId, {
             role: "ai",
             content: aiContent,
             flagged: wasFlagged,
@@ -226,78 +214,25 @@ const ChatPage = () => {
         setStreaming(false);
       }
     },
-    [messages, streaming, sliders, calibrationAnswers, isAtLimit],
+    [
+      messages,
+      streaming,
+      sliders,
+      calibrationAnswers,
+      isAtLimit,
+      conversationId,
+    ],
   );
-
-  useEffect(() => {
-    if (autoInspireTopic && !streaming && messages.length === 0) {
-      sendMessage(autoInspireTopic);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoInspireTopic]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendMessage(input);
   };
 
-  const handleIntentSelect = (prompt: string) => {
-    setShowIntentSelection(false);
-    setInput(prompt);
-  };
-
-  const handleInspireMe = () => {
-    const topic = getRandomTopic();
-    sendMessage(topic);
-  };
-
-  if (showIntentSelection) {
+  if (loading) {
     return (
-      <div className="flex min-h-screen flex-col">
-        <header className="border-border flex items-center justify-between border-b px-4 py-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate({ to: "/child/home" })}
-          >
-            Back
-          </Button>
-          <h1 className="text-sm font-medium">What would you like to do?</h1>
-          <div className="w-16" />
-        </header>
-
-        <div className="flex flex-1 flex-col items-center justify-center px-4 py-8">
-          <div className="mx-auto grid w-full max-w-md gap-3">
-            {INTENT_CATEGORIES.map((intent) => (
-              <button
-                key={intent.id}
-                data-testid={`intent-${intent.id}`}
-                onClick={() => handleIntentSelect(intent.prompt)}
-                className="bg-card hover:bg-accent border-border flex items-center gap-3 rounded-xl border p-4 text-left transition-colors"
-              >
-                <span className="text-2xl">{intent.emoji}</span>
-                <span className="text-sm font-medium">{intent.label}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-6">
-            <Button
-              variant="outline"
-              data-testid="inspire-me"
-              onClick={handleInspireMe}
-            >
-              Inspire me
-            </Button>
-          </div>
-
-          <button
-            className="text-muted-foreground mt-4 text-sm underline"
-            onClick={() => setShowIntentSelection(false)}
-          >
-            Or just type your own question
-          </button>
-        </div>
+      <div className="flex min-h-screen items-center justify-center">
+        <p className="text-muted-foreground">Loading conversation...</p>
       </div>
     );
   }
@@ -312,19 +247,11 @@ const ChatPage = () => {
         >
           Back
         </Button>
-        <h1 className="text-sm font-medium">New conversation</h1>
+        <h1 className="text-sm font-medium">Conversation</h1>
         <div className="w-16" />
       </header>
 
       <div className="flex-1 overflow-y-auto px-4 py-4">
-        {messages.length === 0 && (
-          <div className="flex h-full items-center justify-center">
-            <p className="text-muted-foreground text-center">
-              Ask me anything! I&apos;m here to help you learn.
-            </p>
-          </div>
-        )}
-
         <div className="mx-auto max-w-lg space-y-3">
           {messages.map((msg, i) => (
             <div
@@ -395,17 +322,6 @@ const ChatPage = () => {
             disabled={streaming || isAtLimit}
             autoFocus
           />
-          {messages.length === 0 && (
-            <Button
-              type="button"
-              variant="outline"
-              data-testid="inspire-me"
-              onClick={handleInspireMe}
-              disabled={streaming}
-            >
-              Inspire me
-            </Button>
-          )}
           <Button
             type="submit"
             disabled={streaming || !input.trim() || isAtLimit}
@@ -418,6 +334,6 @@ const ChatPage = () => {
   );
 };
 
-export const Route = createFileRoute("/child/chat/new")({
-  component: ChatPage,
+export const Route = createFileRoute("/child/chat/$conversationId")({
+  component: ContinueChatPage,
 });
