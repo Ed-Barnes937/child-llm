@@ -1,4 +1,10 @@
-export type { ChatMessage, ChatRole } from "./types/chat.js";
+export type {
+  ChatMessage,
+  ChatRole,
+  Conversation,
+  Flag,
+  FlagType,
+} from "./types/chat.js";
 export type { Preset, PresetName } from "./types/preset.js";
 export {
   PRESET_DEFINITIONS,

@@ -5,13 +5,17 @@ import {
   devices,
   presets,
   calibrationAnswers,
+  conversations,
+  messages,
+  flags,
 } from "@child-safe-llm/db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import {
   PRESET_DEFINITIONS,
   type PresetName,
   type PresetSliders,
   type CalibrationAnswer,
+  type FlagType,
 } from "@child-safe-llm/shared";
 
 const getDb = () => {
@@ -199,4 +203,125 @@ export const handleChatStream = async (data: {
   });
 
   return response;
+};
+
+// --- Conversations ---
+
+export const handleCreateConversation = async (data: {
+  childId: string;
+  title?: string;
+}) => {
+  const db = getDb();
+  const [conversation] = await db
+    .insert(conversations)
+    .values({
+      childId: data.childId,
+      title: data.title ?? null,
+    })
+    .returning();
+
+  return {
+    id: conversation.id,
+    childId: conversation.childId,
+    title: conversation.title,
+    createdAt: conversation.createdAt.toISOString(),
+    updatedAt: conversation.updatedAt.toISOString(),
+  };
+};
+
+export const handleGetConversations = async (childId: string) => {
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: conversations.id,
+      title: conversations.title,
+      createdAt: conversations.createdAt,
+      updatedAt: conversations.updatedAt,
+    })
+    .from(conversations)
+    .where(eq(conversations.childId, childId))
+    .orderBy(desc(conversations.updatedAt));
+
+  return rows.map((r) => ({
+    id: r.id,
+    title: r.title,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  }));
+};
+
+export const handleGetConversationMessages = async (conversationId: string) => {
+  const db = getDb();
+  const rows = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.conversationId, conversationId))
+    .orderBy(messages.createdAt);
+
+  return rows.map((r) => ({
+    id: r.id,
+    conversationId: r.conversationId,
+    role: r.role,
+    content: r.content,
+    flagged: r.flagged,
+    createdAt: r.createdAt.toISOString(),
+  }));
+};
+
+export const handleSaveMessage = async (
+  conversationId: string,
+  data: { role: string; content: string; flagged?: boolean },
+) => {
+  const db = getDb();
+  const [message] = await db
+    .insert(messages)
+    .values({
+      conversationId,
+      role: data.role,
+      content: data.content,
+      flagged: data.flagged ?? false,
+    })
+    .returning();
+
+  await db
+    .update(conversations)
+    .set({ updatedAt: new Date() })
+    .where(eq(conversations.id, conversationId));
+
+  return {
+    id: message.id,
+    conversationId: message.conversationId,
+    role: message.role,
+    content: message.content,
+    flagged: message.flagged,
+    createdAt: message.createdAt.toISOString(),
+  };
+};
+
+export const handleCreateFlag = async (data: {
+  childId: string;
+  conversationId?: string;
+  messageId?: string;
+  type: FlagType;
+  reason: string;
+  childMessage?: string;
+  aiResponse?: string;
+  topics?: string[];
+}) => {
+  const db = getDb();
+  const [flag] = await db
+    .insert(flags)
+    .values({
+      childId: data.childId,
+      conversationId: data.conversationId ?? null,
+      messageId: data.messageId ?? null,
+      type: data.type,
+      reason: data.reason,
+      childMessage: data.childMessage ?? null,
+      aiResponse: data.aiResponse ?? null,
+      topics: data.topics ? JSON.stringify(data.topics) : null,
+    })
+    .returning();
+
+  return { id: flag.id };
 };
