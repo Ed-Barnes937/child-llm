@@ -16,6 +16,7 @@ import { Route as RegisterRouteImport } from "../routes/parent/register";
 import { Route as LoginRouteImport } from "../routes/parent/login";
 import { Route as OnboardingRouteImport } from "../routes/parent/onboarding";
 import { Route as DashboardRouteImport } from "../routes/parent/dashboard";
+import { Route as FlagsRouteImport } from "../routes/parent/flags";
 import { Route as ChildLoginRouteImport } from "../routes/child/login";
 import { Route as ChildHomeRouteImport } from "../routes/child/home";
 import { Route as ChatNewRouteImport } from "../routes/child/chat/new";
@@ -57,6 +58,12 @@ const dashboardRoute = createRoute({
   component: DashboardRouteImport.options.component,
 });
 
+const flagsRoute = createRoute({
+  getParentRoute: () => testRootRoute,
+  path: "/parent/flags",
+  component: FlagsRouteImport.options.component,
+});
+
 const childLoginRoute = createRoute({
   getParentRoute: () => testRootRoute,
   path: "/child/login",
@@ -87,6 +94,7 @@ const testRouteTree = testRootRoute.addChildren([
   loginRoute,
   onboardingRoute,
   dashboardRoute,
+  flagsRoute,
   childLoginRoute,
   childHomeRoute,
   chatNewRoute,

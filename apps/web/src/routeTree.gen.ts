@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ParentRegisterRouteImport } from './routes/parent/register'
 import { Route as ParentOnboardingRouteImport } from './routes/parent/onboarding'
 import { Route as ParentLoginRouteImport } from './routes/parent/login'
+import { Route as ParentFlagsRouteImport } from './routes/parent/flags'
 import { Route as ParentDashboardRouteImport } from './routes/parent/dashboard'
 import { Route as ChildLoginRouteImport } from './routes/child/login'
 import { Route as ChildHomeRouteImport } from './routes/child/home'
@@ -37,6 +38,11 @@ const ParentOnboardingRoute = ParentOnboardingRouteImport.update({
 const ParentLoginRoute = ParentLoginRouteImport.update({
   id: '/parent/login',
   path: '/parent/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParentFlagsRoute = ParentFlagsRouteImport.update({
+  id: '/parent/flags',
+  path: '/parent/flags',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ParentDashboardRoute = ParentDashboardRouteImport.update({
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/child/home': typeof ChildHomeRoute
   '/child/login': typeof ChildLoginRoute
   '/parent/dashboard': typeof ParentDashboardRoute
+  '/parent/flags': typeof ParentFlagsRoute
   '/parent/login': typeof ParentLoginRoute
   '/parent/onboarding': typeof ParentOnboardingRoute
   '/parent/register': typeof ParentRegisterRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/child/home': typeof ChildHomeRoute
   '/child/login': typeof ChildLoginRoute
   '/parent/dashboard': typeof ParentDashboardRoute
+  '/parent/flags': typeof ParentFlagsRoute
   '/parent/login': typeof ParentLoginRoute
   '/parent/onboarding': typeof ParentOnboardingRoute
   '/parent/register': typeof ParentRegisterRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/child/home': typeof ChildHomeRoute
   '/child/login': typeof ChildLoginRoute
   '/parent/dashboard': typeof ParentDashboardRoute
+  '/parent/flags': typeof ParentFlagsRoute
   '/parent/login': typeof ParentLoginRoute
   '/parent/onboarding': typeof ParentOnboardingRoute
   '/parent/register': typeof ParentRegisterRoute
@@ -106,6 +115,7 @@ export interface FileRouteTypes {
     | '/child/home'
     | '/child/login'
     | '/parent/dashboard'
+    | '/parent/flags'
     | '/parent/login'
     | '/parent/onboarding'
     | '/parent/register'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/child/home'
     | '/child/login'
     | '/parent/dashboard'
+    | '/parent/flags'
     | '/parent/login'
     | '/parent/onboarding'
     | '/parent/register'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/child/home'
     | '/child/login'
     | '/parent/dashboard'
+    | '/parent/flags'
     | '/parent/login'
     | '/parent/onboarding'
     | '/parent/register'
@@ -140,6 +152,7 @@ export interface RootRouteChildren {
   ChildHomeRoute: typeof ChildHomeRoute
   ChildLoginRoute: typeof ChildLoginRoute
   ParentDashboardRoute: typeof ParentDashboardRoute
+  ParentFlagsRoute: typeof ParentFlagsRoute
   ParentLoginRoute: typeof ParentLoginRoute
   ParentOnboardingRoute: typeof ParentOnboardingRoute
   ParentRegisterRoute: typeof ParentRegisterRoute
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ParentDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/parent/flags': {
+      id: '/parent/flags'
+      path: '/parent/flags'
+      fullPath: '/parent/flags'
+      preLoaderRoute: typeof ParentFlagsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/child/login': {
       id: '/child/login'
       path: '/child/login'
@@ -220,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChildHomeRoute: ChildHomeRoute,
   ChildLoginRoute: ChildLoginRoute,
   ParentDashboardRoute: ParentDashboardRoute,
+  ParentFlagsRoute: ParentFlagsRoute,
   ParentLoginRoute: ParentLoginRoute,
   ParentOnboardingRoute: ParentOnboardingRoute,
   ParentRegisterRoute: ParentRegisterRoute,

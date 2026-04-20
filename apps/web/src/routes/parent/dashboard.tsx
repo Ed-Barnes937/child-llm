@@ -1,16 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { parentAuth } from "@/api/parent-auth";
 import { useParentSession } from "@/queries/parent-auth";
 import { useChildrenByParent } from "@/queries/children";
+import { ChildTabBar } from "@/components/dashboard/ChildTabBar";
+import { ChildSummaryPanel } from "@/components/dashboard/ChildSummaryPanel";
 import { PRESET_DEFINITIONS, type PresetName } from "@child-safe-llm/shared";
 
 const DashboardPage = () => {
@@ -19,12 +15,23 @@ const DashboardPage = () => {
   const { data: kids, isLoading: loadingKids } = useChildrenByParent(
     session?.user?.id,
   );
+  const [userSelectedChildId, setUserSelectedChildId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!isPending && !session) {
       navigate({ to: "/parent/login" });
     }
   }, [isPending, session, navigate]);
+
+  // Derive the effective selected child: user's explicit pick, or first child
+  const activeChildId = useMemo(() => {
+    if (!kids || kids.length === 0) return null;
+    const userPickIsValid =
+      userSelectedChildId && kids.some((k) => k.id === userSelectedChildId);
+    return userPickIsValid ? userSelectedChildId : kids[0].id;
+  }, [kids, userSelectedChildId]);
 
   if (isPending) {
     return (
@@ -56,17 +63,22 @@ const DashboardPage = () => {
         Welcome, {session.user?.name ?? "parent"}.
       </p>
 
-      <div className="mt-8 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Children</h2>
-          <Link
-            to="/parent/onboarding"
-            className={buttonVariants({ size: "sm" })}
-          >
-            Add a child
-          </Link>
-        </div>
+      <div className="mt-6 flex items-center gap-2">
+        <Link
+          to="/parent/onboarding"
+          className={buttonVariants({ size: "sm" })}
+        >
+          Add child
+        </Link>
+        <Link
+          to="/parent/flags"
+          className={buttonVariants({ variant: "outline", size: "sm" })}
+        >
+          View flags
+        </Link>
+      </div>
 
+      <div className="mt-8 space-y-4">
         {loadingKids ? (
           <p className="text-muted-foreground text-sm">Loading...</p>
         ) : !kids || kids.length === 0 ? (
@@ -78,27 +90,24 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
-            {kids.map((child) => (
-              <Card key={child.id}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">
-                    {child.displayName}
-                  </CardTitle>
-                  <CardDescription>
-                    {PRESET_DEFINITIONS[child.presetName as PresetName]
-                      ?.label ?? child.presetName}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground text-sm">
-                    Username:{" "}
-                    <span className="font-mono">{child.username}</span>
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <>
+            <ChildTabBar
+              children={kids}
+              selectedChildId={activeChildId ?? kids[0].id}
+              onSelect={setUserSelectedChildId}
+            />
+            {activeChildId && (
+              <ChildSummaryPanel
+                childId={activeChildId}
+                presetLabel={
+                  PRESET_DEFINITIONS[
+                    kids.find((k) => k.id === activeChildId)
+                      ?.presetName as PresetName
+                  ]?.label
+                }
+              />
+            )}
+          </>
         )}
       </div>
     </div>
