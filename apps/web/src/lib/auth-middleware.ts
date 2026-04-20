@@ -74,6 +74,117 @@ export const serverMiddleware = (): Plugin => {
               return;
             }
 
+            // GET /api/children/:childId/stats
+            const statsMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/stats$/,
+            );
+            if (statsMatch && req.method === "GET") {
+              const result = await handlers.handleGetChildStats(statsMatch[1]);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // PUT /api/children/:childId/preset
+            const presetMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/preset$/,
+            );
+            if (presetMatch && req.method === "PUT") {
+              const body = await readBody(req);
+              const sliders = JSON.parse(body);
+              const result = await handlers.handleUpdatePreset(
+                presetMatch[1],
+                sliders,
+              );
+              if (!result) {
+                res.statusCode = 404;
+                res.end(JSON.stringify({ error: "Preset not found" }));
+                return;
+              }
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // PUT /api/children/:childId/calibration
+            const calibrationMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/calibration$/,
+            );
+            if (calibrationMatch && req.method === "PUT") {
+              const body = await readBody(req);
+              const data = JSON.parse(body);
+              const result = await handlers.handleUpdateCalibration(
+                calibrationMatch[1],
+                data.answers,
+              );
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // DELETE /api/children/:childId/topics/:topicId
+            const topicDeleteMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/topics\/([^/]+)$/,
+            );
+            if (topicDeleteMatch && req.method === "DELETE") {
+              const result = await handlers.handleDeleteParentSeededTopic(
+                topicDeleteMatch[2],
+              );
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // POST /api/children/:childId/topics
+            const topicPostMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/topics$/,
+            );
+            if (topicPostMatch && req.method === "POST") {
+              const body = await readBody(req);
+              const data = JSON.parse(body);
+              const result = await handlers.handleCreateParentSeededTopic(
+                topicPostMatch[1],
+                data.topic,
+              );
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // GET /api/children/:childId/topics
+            const topicGetMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/topics$/,
+            );
+            if (topicGetMatch && req.method === "GET") {
+              const result = await handlers.handleGetParentSeededTopics(
+                topicGetMatch[1],
+              );
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // PATCH /api/children/:childId
+            const childPatchMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)$/,
+            );
+            if (childPatchMatch && req.method === "PATCH") {
+              const body = await readBody(req);
+              const data = JSON.parse(body);
+              const result = await handlers.handleUpdateChild(
+                childPatchMatch[1],
+                data,
+              );
+              if (!result) {
+                res.statusCode = 404;
+                res.end(JSON.stringify({ error: "Child not found" }));
+                return;
+              }
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
             const body = await readBody(req);
 
             if (req.method === "POST") {
@@ -140,6 +251,42 @@ export const serverMiddleware = (): Plugin => {
             const handlers = await server.ssrLoadModule(
               "/src/server/api-handlers.ts",
             );
+
+            // PATCH /api/flags/:flagId
+            const flagPatchMatch = url.pathname.match(
+              /^\/api\/flags\/([^/]+)$/,
+            );
+            if (flagPatchMatch && req.method === "PATCH") {
+              const body = await readBody(req);
+              const data = JSON.parse(body);
+              const result = await handlers.handleUpdateFlag(
+                flagPatchMatch[1],
+                data,
+              );
+              if (!result) {
+                res.statusCode = 404;
+                res.end(JSON.stringify({ error: "Flag not found" }));
+                return;
+              }
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // GET /api/flags?parentId=x&childId=y
+            if (req.method === "GET") {
+              const parentId = url.searchParams.get("parentId");
+              if (!parentId) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: "parentId required" }));
+                return;
+              }
+              const childId = url.searchParams.get("childId") || undefined;
+              const result = await handlers.handleGetFlags(parentId, childId);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
 
             if (req.method === "POST") {
               const body = await readBody(req);

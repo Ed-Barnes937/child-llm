@@ -11,6 +11,7 @@ import type {
   PresetSliders,
   CalibrationAnswer,
 } from "@child-safe-llm/shared";
+import type { UpdateChildRequest } from "@/api/types";
 
 export const childrenByParentOptions = (parentId: string | undefined) => {
   return queryOptions({
@@ -51,6 +52,73 @@ export const useCreateChild = () => {
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["children", variables.parentId],
+      });
+    },
+  });
+};
+
+// --- Phase 6: Parent Dashboard ---
+
+export const childStatsOptions = (childId: string | undefined) =>
+  queryOptions({
+    queryKey: ["child-stats", childId],
+    queryFn: () => childrenApi.getStats(childId!),
+    enabled: !!childId,
+  });
+
+export const useChildStats = (childId: string | undefined) =>
+  useQuery(childStatsOptions(childId));
+
+export const useUpdateChild = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      childId,
+      data,
+    }: {
+      childId: string;
+      data: UpdateChildRequest;
+    }) => childrenApi.update(childId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["children"] });
+    },
+  });
+};
+
+export const useUpdatePreset = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      childId,
+      sliders,
+    }: {
+      childId: string;
+      sliders: Partial<PresetSliders>;
+    }) => childrenApi.updatePreset(childId, sliders),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["child-stats", variables.childId],
+      });
+    },
+  });
+};
+
+export const useUpdateCalibration = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      childId,
+      answers,
+    }: {
+      childId: string;
+      answers: CalibrationAnswer[];
+    }) => childrenApi.updateCalibration(childId, answers),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["child-stats", variables.childId],
       });
     },
   });
