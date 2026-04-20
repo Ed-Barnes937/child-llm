@@ -4,7 +4,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { getChildSession, clearChildSession } from "@/lib/child-session";
 import { conversationsApi } from "@/api/conversations";
 import type { ConversationSummary } from "@/api/types";
-import { getRandomTopic, INSPIRE_SESSION_KEY } from "@/lib/inspire-me";
+import { getRandomTopic, INSPIRE_SESSION_KEY } from "@/lib/chat-config";
 
 const ChildHomePage = () => {
   const navigate = useNavigate();

@@ -73,8 +73,8 @@ export interface FileRoutesByFullPath {
   '/parent/login': typeof ParentLoginRoute
   '/parent/onboarding': typeof ParentOnboardingRoute
   '/parent/register': typeof ParentRegisterRoute
-  '/child/chat/new': typeof ChildChatNewRoute
   '/child/chat/$conversationId': typeof ChildChatConversationIdRoute
+  '/child/chat/new': typeof ChildChatNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -84,8 +84,8 @@ export interface FileRoutesByTo {
   '/parent/login': typeof ParentLoginRoute
   '/parent/onboarding': typeof ParentOnboardingRoute
   '/parent/register': typeof ParentRegisterRoute
-  '/child/chat/new': typeof ChildChatNewRoute
   '/child/chat/$conversationId': typeof ChildChatConversationIdRoute
+  '/child/chat/new': typeof ChildChatNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -96,8 +96,8 @@ export interface FileRoutesById {
   '/parent/login': typeof ParentLoginRoute
   '/parent/onboarding': typeof ParentOnboardingRoute
   '/parent/register': typeof ParentRegisterRoute
-  '/child/chat/new': typeof ChildChatNewRoute
   '/child/chat/$conversationId': typeof ChildChatConversationIdRoute
+  '/child/chat/new': typeof ChildChatNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -109,8 +109,8 @@ export interface FileRouteTypes {
     | '/parent/login'
     | '/parent/onboarding'
     | '/parent/register'
-    | '/child/chat/new'
     | '/child/chat/$conversationId'
+    | '/child/chat/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -120,8 +120,8 @@ export interface FileRouteTypes {
     | '/parent/login'
     | '/parent/onboarding'
     | '/parent/register'
-    | '/child/chat/new'
     | '/child/chat/$conversationId'
+    | '/child/chat/new'
   id:
     | '__root__'
     | '/'
@@ -131,8 +131,8 @@ export interface FileRouteTypes {
     | '/parent/login'
     | '/parent/onboarding'
     | '/parent/register'
-    | '/child/chat/new'
     | '/child/chat/$conversationId'
+    | '/child/chat/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -143,8 +143,8 @@ export interface RootRouteChildren {
   ParentLoginRoute: typeof ParentLoginRoute
   ParentOnboardingRoute: typeof ParentOnboardingRoute
   ParentRegisterRoute: typeof ParentRegisterRoute
-  ChildChatNewRoute: typeof ChildChatNewRoute
   ChildChatConversationIdRoute: typeof ChildChatConversationIdRoute
+  ChildChatNewRoute: typeof ChildChatNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -223,8 +223,8 @@ const rootRouteChildren: RootRouteChildren = {
   ParentLoginRoute: ParentLoginRoute,
   ParentOnboardingRoute: ParentOnboardingRoute,
   ParentRegisterRoute: ParentRegisterRoute,
-  ChildChatNewRoute: ChildChatNewRoute,
   ChildChatConversationIdRoute: ChildChatConversationIdRoute,
+  ChildChatNewRoute: ChildChatNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
