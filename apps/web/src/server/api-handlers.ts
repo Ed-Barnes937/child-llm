@@ -23,6 +23,17 @@ const getDb = () => {
   return drizzle(sql);
 };
 
+const getPipelineApiKey = (): string => {
+  const key = process.env.PIPELINE_API_KEY;
+  if (key) return key;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "PIPELINE_API_KEY must be set in production. Refusing to call the pipeline with an insecure default.",
+    );
+  }
+  return "dev-pipeline-key";
+};
+
 const generateUsername = (displayName: string): string => {
   const base = displayName
     .toLowerCase()
@@ -227,7 +238,7 @@ export const handleChatStream = async (data: {
   history: { role: string; content: string }[];
 }) => {
   const pipelineUrl = process.env.PIPELINE_URL ?? "http://localhost:3001";
-  const pipelineKey = process.env.PIPELINE_API_KEY ?? "dev-pipeline-key";
+  const pipelineKey = getPipelineApiKey();
 
   const response = await fetch(`${pipelineUrl}/chat`, {
     method: "POST",
@@ -392,7 +403,7 @@ export const handleDeleteConversation = async (conversationId: string) => {
 export const handleSummariseAndPurge = async (conversationId: string) => {
   const db = getDb();
   const pipelineUrl = process.env.PIPELINE_URL ?? "http://localhost:3001";
-  const pipelineKey = process.env.PIPELINE_API_KEY ?? "dev-pipeline-key";
+  const pipelineKey = getPipelineApiKey();
 
   const rows = await db
     .select({ role: messages.role, content: messages.content })
@@ -421,17 +432,26 @@ export const handleSummariseAndPurge = async (conversationId: string) => {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to generate summary");
+    const detail = await response.text().catch(() => "");
+    throw new Error(
+      `Pipeline summariser returned ${response.status} ${response.statusText}${
+        detail ? `: ${detail}` : ""
+      }`,
+    );
   }
 
   const { summary } = (await response.json()) as { summary: string };
 
-  await db
-    .update(conversations)
-    .set({ summary })
-    .where(eq(conversations.id, conversationId));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(conversations)
+      .set({ summary })
+      .where(eq(conversations.id, conversationId));
 
-  await db.delete(messages).where(eq(messages.conversationId, conversationId));
+    await tx
+      .delete(messages)
+      .where(eq(messages.conversationId, conversationId));
+  });
 
   return { summary };
 };

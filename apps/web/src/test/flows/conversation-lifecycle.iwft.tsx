@@ -74,6 +74,11 @@ test.describe("Conversation summary view", () => {
 
     // Should NOT show the chat input
     await expect(page.getByPlaceholder("Type a message...")).not.toBeVisible();
+
+    // Should NOT show any chat messages — summary view must replace the
+    // transcript, not render alongside it.
+    await expect(page.getByTestId("ai-message")).toHaveCount(0);
+    await expect(page.getByTestId("report-button")).toHaveCount(0);
   });
 
   test("delete button removes the conversation and navigates home", async ({
@@ -141,7 +146,7 @@ test.describe("Conversation summary view", () => {
 });
 
 test.describe("Summarise and purge", () => {
-  test("summarise and purge generates summary and removes messages", async ({
+  test("mock DB summariseAndPurge generates summary and removes messages", async ({
     backendSimulator,
   }) => {
     const parent = backendSimulator.db.createParent({
