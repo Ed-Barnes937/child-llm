@@ -157,6 +157,32 @@ export const serverMiddleware = (): Plugin => {
               "/src/server/api-handlers.ts",
             );
 
+            // GET /api/conversations/:id/summary
+            const summaryMatch = url.pathname.match(
+              /^\/api\/conversations\/([^/]+)\/summary$/,
+            );
+            if (summaryMatch && req.method === "GET") {
+              const result = await handlers.handleGetConversationSummary(
+                summaryMatch[1],
+              );
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // POST /api/conversations/:id/summarise
+            const summariseMatch = url.pathname.match(
+              /^\/api\/conversations\/([^/]+)\/summarise$/,
+            );
+            if (summariseMatch && req.method === "POST") {
+              const result = await handlers.handleSummariseAndPurge(
+                summariseMatch[1],
+              );
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
             // GET/POST /api/conversations/:id/messages
             const messagesMatch = url.pathname.match(
               /^\/api\/conversations\/([^/]+)\/messages$/,
@@ -177,6 +203,19 @@ export const serverMiddleware = (): Plugin => {
               // GET
               const result =
                 await handlers.handleGetConversationMessages(conversationId);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // DELETE /api/conversations/:id
+            const deleteMatch = url.pathname.match(
+              /^\/api\/conversations\/([^/]+)$/,
+            );
+            if (deleteMatch && req.method === "DELETE") {
+              const result = await handlers.handleDeleteConversation(
+                deleteMatch[1],
+              );
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify(result));
               return;

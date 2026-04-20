@@ -10,6 +10,12 @@ import type {
   ChildConfigResponse,
 } from "./types";
 
+const ensureOk = async (res: Response, context: string): Promise<void> => {
+  if (!res.ok) {
+    throw new Error(`${context} failed: ${res.status} ${res.statusText}`);
+  }
+};
+
 export const conversationsApi = {
   create: async (
     data: CreateConversationRequest,
@@ -19,6 +25,7 @@ export const conversationsApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+    await ensureOk(res, "Create conversation");
     return res.json();
   },
 
@@ -26,11 +33,13 @@ export const conversationsApi = {
     const res = await fetch(
       `/api/conversations?childId=${encodeURIComponent(childId)}`,
     );
+    await ensureOk(res, "List conversations");
     return res.json();
   },
 
   getMessages: async (conversationId: string): Promise<MessageResponse[]> => {
     const res = await fetch(`/api/conversations/${conversationId}/messages`);
+    await ensureOk(res, "Get conversation messages");
     return res.json();
   },
 
@@ -43,6 +52,7 @@ export const conversationsApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+    await ensureOk(res, "Save message");
     return res.json();
   },
 
@@ -52,6 +62,7 @@ export const conversationsApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+    await ensureOk(res, "Create flag");
     return res.json();
   },
 
@@ -59,6 +70,35 @@ export const conversationsApi = {
     const res = await fetch(
       `/api/children/${encodeURIComponent(childId)}/config`,
     );
+    await ensureOk(res, "Get child config");
+    return res.json();
+  },
+
+  getSummary: async (
+    conversationId: string,
+  ): Promise<{ summary: string | null }> => {
+    const res = await fetch(`/api/conversations/${conversationId}/summary`);
+    await ensureOk(res, "Get conversation summary");
+    return res.json();
+  },
+
+  deleteConversation: async (
+    conversationId: string,
+  ): Promise<{ success: boolean }> => {
+    const res = await fetch(`/api/conversations/${conversationId}`, {
+      method: "DELETE",
+    });
+    await ensureOk(res, "Delete conversation");
+    return res.json();
+  },
+
+  summariseAndPurge: async (
+    conversationId: string,
+  ): Promise<{ summary: string }> => {
+    const res = await fetch(`/api/conversations/${conversationId}/summarise`, {
+      method: "POST",
+    });
+    await ensureOk(res, "Summarise conversation");
     return res.json();
   },
 };

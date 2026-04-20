@@ -1,3 +1,5 @@
+import type { PresetSliders } from "@child-safe-llm/shared";
+
 const INSPIRE_ME_TOPICS = [
   "How do volcanoes work?",
   "What are black holes?",
@@ -61,10 +63,22 @@ export const INTENT_CATEGORIES = [
 
 export const INSPIRE_SESSION_KEY = "child-safe-llm-inspire";
 
-export const SESSION_LIMIT_MAP: Record<number, number> = {
+export const MAX_CONVERSATION_TITLE_LEN = 100;
+
+export const RESTRICTED_INTERACTION_THRESHOLD = 3;
+
+export type SliderLevel = 1 | 2 | 3 | 4 | 5;
+
+export const SESSION_LIMIT_MAP: Record<SliderLevel, number> = {
   1: 10,
   2: 20,
   3: 30,
   4: 50,
   5: Infinity,
+};
+
+export const getSessionLimit = (sliders: PresetSliders | null): number => {
+  if (!sliders) return Infinity;
+  const key = sliders.sessionLimits as SliderLevel;
+  return SESSION_LIMIT_MAP[key] ?? 10;
 };

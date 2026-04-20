@@ -268,6 +268,126 @@ test.describe("Session limits", () => {
     // Input should be disabled
     await expect(page.getByPlaceholder("Type a message...")).toBeDisabled();
   });
+
+  test("independent-explorer never shows session warning or limit", async ({
+    mount,
+    page,
+    backendSimulator,
+  }) => {
+    // independent-explorer has sessionLimits=4 which maps to 50 messages.
+    // We don't want to send 50; instead, send a handful and confirm neither
+    // banner appears and input stays enabled.
+    await seedAndLogin(backendSimulator.db, page, "independent-explorer");
+
+    await backendSimulator.install(page);
+    await mount(<IwftApp initialPath="/child/chat/new" />);
+
+    await expect(page.getByPlaceholder("Type a message...")).toBeVisible({
+      timeout: 10000,
+    });
+
+    for (let i = 0; i < 3; i++) {
+      await page
+        .getByPlaceholder("Type a message...")
+        .fill(`Question ${i + 1}`);
+      await page.getByRole("button", { name: "Send" }).click();
+      await expect(page.getByTestId("ai-message").nth(i)).toBeVisible({
+        timeout: 10000,
+      });
+      await expect(page.getByPlaceholder("Type a message...")).toBeEnabled();
+    }
+
+    await expect(page.getByTestId("session-warning")).not.toBeVisible();
+    await expect(page.getByTestId("session-limit")).not.toBeVisible();
+  });
+
+  test("continuation route respects session limits when existing messages exceed limit", async ({
+    mount,
+    page,
+    backendSimulator,
+  }) => {
+    const { child } = await seedAndLogin(
+      backendSimulator.db,
+      page,
+      "early-learner",
+    );
+
+    const convo = backendSimulator.db.createConversation({
+      childId: child.id,
+      title: "Old chat",
+    });
+
+    // Pre-seed 10 messages (= limit for early-learner)
+    for (let i = 0; i < 5; i++) {
+      backendSimulator.db.saveMessage({
+        conversationId: convo.id,
+        role: "child",
+        content: `Q${i}`,
+      });
+      backendSimulator.db.saveMessage({
+        conversationId: convo.id,
+        role: "ai",
+        content: `A${i}`,
+      });
+    }
+
+    await backendSimulator.install(page);
+    await mount(<IwftApp initialPath={`/child/chat/${convo.id}`} />);
+
+    await expect(page.getByTestId("session-limit")).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByPlaceholder("Type a message...")).toBeDisabled();
+  });
+});
+
+test.describe("Pipeline flag persistence", () => {
+  test("persists a flag event emitted during the chat stream", async ({
+    mount,
+    page,
+    backendSimulator,
+  }) => {
+    const { child } = await seedAndLogin(backendSimulator.db, page);
+
+    backendSimulator.db.setChatStreamScenario({
+      tokens: ["When someone dies, their body stops working."],
+      flag: {
+        type: "sensitive",
+        reason: "Sensitive topic detected: death-and-dying",
+        topics: ["death-and-dying"],
+        childMessage: "What happens when you die?",
+        aiResponse: "When someone dies, their body stops working.",
+      },
+    });
+
+    await mount(<IwftApp initialPath="/child/chat/new" />);
+    await backendSimulator.install(page);
+
+    await page
+      .getByPlaceholder("Type a message...")
+      .fill("What happens when you die?");
+    await page.getByRole("button", { name: "Send" }).click();
+
+    await expect(page.getByTestId("ai-message")).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByPlaceholder("Type a message...")).toBeEnabled();
+
+    const flags = backendSimulator.db.flagsList.filter(
+      (f) => f.childId === child.id && f.type === "sensitive",
+    );
+    expect(flags.length).toBe(1);
+    expect(flags[0].reason).toContain("death-and-dying");
+
+    // The ai message should be persisted as flagged.
+    const conversations = backendSimulator.db.getConversationsByChild(child.id);
+    expect(conversations.length).toBe(1);
+    const messages = backendSimulator.db.getMessagesByConversation(
+      conversations[0].id,
+    );
+    const aiMessage = messages.find((m) => m.role === "ai");
+    expect(aiMessage?.flagged).toBe(true);
+  });
 });
 
 test.describe("Home page conversations list", () => {
