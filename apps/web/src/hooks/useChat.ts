@@ -230,9 +230,11 @@ export const useChat = ({
 
         let aiContent = "";
         let wasFlagged = false;
+        let errored = false;
 
         for await (const chunk of stream) {
           if ("error" in chunk) {
+            errored = true;
             setMessages((prev) => {
               const updated = [...prev];
               updated[updated.length - 1] = {
@@ -268,7 +270,7 @@ export const useChat = ({
           }
         }
 
-        if (aiContent) {
+        if (aiContent && !errored) {
           await conversationsApi.saveMessage(convoId, {
             role: "ai",
             content: aiContent,

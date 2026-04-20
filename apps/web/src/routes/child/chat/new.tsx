@@ -8,6 +8,7 @@ import {
   INTENT_CATEGORIES,
   getRandomTopic,
   INSPIRE_SESSION_KEY,
+  RESTRICTED_INTERACTION_THRESHOLD,
 } from "@/lib/chat-config";
 
 const ChatPage = () => {
@@ -45,7 +46,7 @@ const ChatPage = () => {
     !dismissedIntent &&
     !autoInspireHandled &&
     sliders !== null &&
-    sliders.interactionMode <= 3 &&
+    sliders.interactionMode <= RESTRICTED_INTERACTION_THRESHOLD &&
     messages.length === 0 &&
     !streaming;
 

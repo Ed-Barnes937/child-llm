@@ -65,6 +65,8 @@ export const INSPIRE_SESSION_KEY = "child-safe-llm-inspire";
 
 export const MAX_CONVERSATION_TITLE_LEN = 100;
 
+export const RESTRICTED_INTERACTION_THRESHOLD = 3;
+
 export type SliderLevel = 1 | 2 | 3 | 4 | 5;
 
 export const SESSION_LIMIT_MAP: Record<SliderLevel, number> = {
@@ -78,5 +80,5 @@ export const SESSION_LIMIT_MAP: Record<SliderLevel, number> = {
 export const getSessionLimit = (sliders: PresetSliders | null): number => {
   if (!sliders) return Infinity;
   const key = sliders.sessionLimits as SliderLevel;
-  return SESSION_LIMIT_MAP[key] ?? Infinity;
+  return SESSION_LIMIT_MAP[key] ?? 10;
 };
