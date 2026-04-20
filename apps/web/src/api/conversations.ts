@@ -7,6 +7,7 @@ import type {
   MessageResponse,
   CreateFlagRequest,
   CreateFlagResponse,
+  ChildConfigResponse,
 } from "./types";
 
 export const conversationsApi = {
@@ -51,6 +52,13 @@ export const conversationsApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+    return res.json();
+  },
+
+  getChildConfig: async (childId: string): Promise<ChildConfigResponse> => {
+    const res = await fetch(
+      `/api/children/${encodeURIComponent(childId)}/config`,
+    );
     return res.json();
   },
 };

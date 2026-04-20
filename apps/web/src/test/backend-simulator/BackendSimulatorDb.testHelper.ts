@@ -1,8 +1,9 @@
 import { EndpointBehaviourManager } from "./EndpointBehaviourManager.testHelper";
-import type {
-  PresetName,
-  CalibrationAnswer,
-  FlagType,
+import {
+  PRESET_DEFINITIONS,
+  type PresetName,
+  type CalibrationAnswer,
+  type FlagType,
 } from "@child-safe-llm/shared";
 
 export interface MockParent {
@@ -265,6 +266,22 @@ export class BackendSimulatorDb {
     }
 
     return message;
+  };
+
+  getChildConfig = (childId: string) => {
+    const child = this.findChildById(childId);
+    const sliders = child
+      ? PRESET_DEFINITIONS[child.presetName].sliders
+      : PRESET_DEFINITIONS["confident-reader"].sliders;
+    const answers = this.getCalibrationAnswers(childId);
+    return {
+      sliders,
+      calibrationAnswers: answers.map((a) => ({
+        questionId: a.questionId,
+        selectedLevel: a.selectedLevel,
+        customAnswer: a.customAnswer,
+      })),
+    };
   };
 
   createFlag = (data: {

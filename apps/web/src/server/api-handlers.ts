@@ -181,9 +181,49 @@ export const handleGetChildrenForDevice = async (deviceToken: string) => {
   return { children: result };
 };
 
+export const handleGetChildConfig = async (childId: string) => {
+  const db = getDb();
+
+  const [preset] = await db
+    .select()
+    .from(presets)
+    .where(eq(presets.childId, childId))
+    .limit(1);
+
+  const answers = await db
+    .select()
+    .from(calibrationAnswers)
+    .where(eq(calibrationAnswers.childId, childId));
+
+  const defaults = preset
+    ? undefined
+    : PRESET_DEFINITIONS["confident-reader"].sliders;
+
+  return {
+    sliders: preset
+      ? {
+          vocabularyLevel: preset.vocabularyLevel,
+          responseDepth: preset.responseDepth,
+          answeringStyle: preset.answeringStyle,
+          interactionMode: preset.interactionMode,
+          topicAccess: preset.topicAccess,
+          sessionLimits: preset.sessionLimits,
+          parentVisibility: preset.parentVisibility,
+        }
+      : defaults,
+    calibrationAnswers: answers.map((a) => ({
+      questionId: a.questionId,
+      selectedLevel: a.selectedLevel,
+      customAnswer: a.customAnswer,
+    })),
+  };
+};
+
 export const handleChatStream = async (data: {
   message: string;
   presetName: string;
+  sliders?: PresetSliders;
+  calibrationAnswers?: CalibrationAnswer[];
   history: { role: string; content: string }[];
 }) => {
   const pipelineUrl = process.env.PIPELINE_URL ?? "http://localhost:3001";
@@ -198,6 +238,8 @@ export const handleChatStream = async (data: {
     body: JSON.stringify({
       message: data.message,
       presetName: data.presetName,
+      sliders: data.sliders,
+      calibrationAnswers: data.calibrationAnswers,
       history: data.history,
     }),
   });
