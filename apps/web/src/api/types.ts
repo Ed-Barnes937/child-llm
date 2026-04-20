@@ -100,3 +100,66 @@ export type ChatStreamChunk =
   | ChatStreamToken
   | ChatStreamError
   | ChatStreamFlag;
+
+// Conversations
+export interface CreateConversationRequest {
+  childId: string;
+  title?: string;
+}
+
+export interface CreateConversationResponse {
+  id: string;
+  childId: string;
+  title: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConversationSummary {
+  id: string;
+  title: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lastMessage?: string;
+}
+
+// Messages
+export interface SaveMessageRequest {
+  role: "child" | "ai";
+  content: string;
+  flagged?: boolean;
+}
+
+export interface SaveMessageResponse {
+  id: string;
+  conversationId: string;
+  role: string;
+  content: string;
+  flagged: boolean;
+  createdAt: string;
+}
+
+export interface MessageResponse {
+  id: string;
+  conversationId: string;
+  role: string;
+  content: string;
+  flagged: boolean;
+  createdAt: string;
+}
+
+// Flags
+export interface CreateFlagRequest {
+  childId: string;
+  conversationId?: string;
+  messageId?: string;
+  type: "sensitive" | "blocked" | "validation-failed" | "reported";
+  reason: string;
+  childMessage?: string;
+  aiResponse?: string;
+  topics?: string[];
+}
+
+export interface CreateFlagResponse {
+  id: string;
+}

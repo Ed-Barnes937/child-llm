@@ -122,6 +122,76 @@ export const serverMiddleware = (): Plugin => {
             }
           }
 
+          // Flags API
+          if (req.url?.startsWith("/api/flags")) {
+            const handlers = await server.ssrLoadModule(
+              "/src/server/api-handlers.ts",
+            );
+
+            if (req.method === "POST") {
+              const body = await readBody(req);
+              const data = JSON.parse(body);
+              const result = await handlers.handleCreateFlag(data);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+          }
+
+          // Conversations API
+          if (req.url?.startsWith("/api/conversations")) {
+            const handlers = await server.ssrLoadModule(
+              "/src/server/api-handlers.ts",
+            );
+
+            // GET/POST /api/conversations/:id/messages
+            const messagesMatch = url.pathname.match(
+              /^\/api\/conversations\/([^/]+)\/messages$/,
+            );
+            if (messagesMatch) {
+              const conversationId = messagesMatch[1];
+              if (req.method === "POST") {
+                const body = await readBody(req);
+                const data = JSON.parse(body);
+                const result = await handlers.handleSaveMessage(
+                  conversationId,
+                  data,
+                );
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify(result));
+                return;
+              }
+              // GET
+              const result =
+                await handlers.handleGetConversationMessages(conversationId);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // POST /api/conversations
+            if (req.method === "POST") {
+              const body = await readBody(req);
+              const data = JSON.parse(body);
+              const result = await handlers.handleCreateConversation(data);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // GET /api/conversations?childId=x
+            const childId = url.searchParams.get("childId");
+            if (!childId) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: "childId required" }));
+              return;
+            }
+            const result = await handlers.handleGetConversations(childId);
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify(result));
+            return;
+          }
+
           // Chat streaming API
           if (req.url?.startsWith("/api/chat/stream")) {
             const handlers = await server.ssrLoadModule(
