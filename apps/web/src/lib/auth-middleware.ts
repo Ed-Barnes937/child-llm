@@ -19,6 +19,28 @@ const toHeaders = (raw: import("http").IncomingHttpHeaders): Headers => {
   return headers;
 };
 
+const extractParentId = async (
+  server: import("vite").ViteDevServer,
+  req: import("http").IncomingMessage,
+): Promise<string | null> => {
+  const cookie = req.headers.cookie ?? "";
+  const match = cookie.match(/better-auth\.session_token=([^;]+)/);
+  if (!match) return null;
+
+  const { auth } = await server.ssrLoadModule("/src/lib/auth.ts");
+  const headers = toHeaders(req.headers);
+  const sessionUrl = new URL(
+    "/api/auth/get-session",
+    `http://${req.headers.host}`,
+  );
+  const sessionReq = new Request(sessionUrl, { method: "GET", headers });
+  const sessionRes = await auth.handler(sessionReq);
+  if (!sessionRes.ok) return null;
+
+  const body = await sessionRes.json();
+  return body?.user?.id ?? null;
+};
+
 export const serverMiddleware = (): Plugin => {
   return {
     name: "server-middleware",
@@ -74,12 +96,33 @@ export const serverMiddleware = (): Plugin => {
               return;
             }
 
+            // --- Parent-authenticated child endpoints ---
+            // These require session to derive parentId for ownership checks.
+            const requireParent = async () => {
+              const parentId = await extractParentId(server, req);
+              if (!parentId) {
+                res.statusCode = 401;
+                res.end(JSON.stringify({ error: "Unauthorized" }));
+              }
+              return parentId;
+            };
+
             // GET /api/children/:childId/stats
             const statsMatch = url.pathname.match(
               /^\/api\/children\/([^/]+)\/stats$/,
             );
             if (statsMatch && req.method === "GET") {
-              const result = await handlers.handleGetChildStats(statsMatch[1]);
+              const parentId = await requireParent();
+              if (!parentId) return;
+              const result = await handlers.handleGetChildStats(
+                parentId,
+                statsMatch[1],
+              );
+              if (!result) {
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify(result));
               return;
@@ -90,15 +133,18 @@ export const serverMiddleware = (): Plugin => {
               /^\/api\/children\/([^/]+)\/preset$/,
             );
             if (presetMatch && req.method === "PUT") {
+              const parentId = await requireParent();
+              if (!parentId) return;
               const body = await readBody(req);
               const sliders = JSON.parse(body);
               const result = await handlers.handleUpdatePreset(
+                parentId,
                 presetMatch[1],
                 sliders,
               );
               if (!result) {
-                res.statusCode = 404;
-                res.end(JSON.stringify({ error: "Preset not found" }));
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
                 return;
               }
               res.setHeader("Content-Type", "application/json");
@@ -111,12 +157,20 @@ export const serverMiddleware = (): Plugin => {
               /^\/api\/children\/([^/]+)\/calibration$/,
             );
             if (calibrationMatch && req.method === "PUT") {
+              const parentId = await requireParent();
+              if (!parentId) return;
               const body = await readBody(req);
               const data = JSON.parse(body);
               const result = await handlers.handleUpdateCalibration(
+                parentId,
                 calibrationMatch[1],
                 data.answers,
               );
+              if (!result) {
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify(result));
               return;
@@ -127,9 +181,18 @@ export const serverMiddleware = (): Plugin => {
               /^\/api\/children\/([^/]+)\/topics\/([^/]+)$/,
             );
             if (topicDeleteMatch && req.method === "DELETE") {
+              const parentId = await requireParent();
+              if (!parentId) return;
               const result = await handlers.handleDeleteParentSeededTopic(
+                parentId,
+                topicDeleteMatch[1],
                 topicDeleteMatch[2],
               );
+              if (!result) {
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify(result));
               return;
@@ -140,12 +203,20 @@ export const serverMiddleware = (): Plugin => {
               /^\/api\/children\/([^/]+)\/topics$/,
             );
             if (topicPostMatch && req.method === "POST") {
+              const parentId = await requireParent();
+              if (!parentId) return;
               const body = await readBody(req);
               const data = JSON.parse(body);
               const result = await handlers.handleCreateParentSeededTopic(
+                parentId,
                 topicPostMatch[1],
                 data.topic,
               );
+              if (!result) {
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify(result));
               return;
@@ -156,9 +227,17 @@ export const serverMiddleware = (): Plugin => {
               /^\/api\/children\/([^/]+)\/topics$/,
             );
             if (topicGetMatch && req.method === "GET") {
+              const parentId = await requireParent();
+              if (!parentId) return;
               const result = await handlers.handleGetParentSeededTopics(
+                parentId,
                 topicGetMatch[1],
               );
+              if (!result) {
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify(result));
               return;
@@ -169,15 +248,18 @@ export const serverMiddleware = (): Plugin => {
               /^\/api\/children\/([^/]+)$/,
             );
             if (childPatchMatch && req.method === "PATCH") {
+              const parentId = await requireParent();
+              if (!parentId) return;
               const body = await readBody(req);
               const data = JSON.parse(body);
               const result = await handlers.handleUpdateChild(
+                parentId,
                 childPatchMatch[1],
                 data,
               );
               if (!result) {
-                res.statusCode = 404;
-                res.end(JSON.stringify({ error: "Child not found" }));
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
                 return;
               }
               res.setHeader("Content-Type", "application/json");
@@ -257,15 +339,22 @@ export const serverMiddleware = (): Plugin => {
               /^\/api\/flags\/([^/]+)$/,
             );
             if (flagPatchMatch && req.method === "PATCH") {
+              const parentId = await extractParentId(server, req);
+              if (!parentId) {
+                res.statusCode = 401;
+                res.end(JSON.stringify({ error: "Unauthorized" }));
+                return;
+              }
               const body = await readBody(req);
               const data = JSON.parse(body);
               const result = await handlers.handleUpdateFlag(
+                parentId,
                 flagPatchMatch[1],
                 data,
               );
               if (!result) {
-                res.statusCode = 404;
-                res.end(JSON.stringify({ error: "Flag not found" }));
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
                 return;
               }
               res.setHeader("Content-Type", "application/json");
