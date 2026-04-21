@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useParentSession } from "@/queries/parent-auth";
 import {
   useChildrenByParent,
+  useChildConfig,
   useUpdateChild,
   useUpdatePreset,
 } from "@/queries/children";
@@ -29,6 +30,7 @@ const ChildSettingsPage = () => {
   const { data: session, isPending } = useParentSession();
   const { data: kids } = useChildrenByParent(session?.user?.id);
   const { data: topics } = useParentSeededTopics(childId);
+  const { data: childConfig } = useChildConfig(childId);
 
   const updateChildMutation = useUpdateChild();
   const updatePresetMutation = useUpdatePreset();
@@ -37,18 +39,19 @@ const ChildSettingsPage = () => {
 
   const child = kids?.find((c) => c.id === childId);
 
-  // Track slider overrides separately from the preset defaults.
+  // Track slider overrides separately from the saved/default values.
   const [sliderOverrides, setSliderOverrides] = useState<
     Partial<PresetSliders>
   >({});
 
-  // Derive effective slider values from preset defaults + overrides
+  // Derive effective slider values: saved config > preset defaults, with local overrides on top
   const sliderValues = useMemo<PresetSliders | null>(() => {
     if (!child) return null;
     const preset = PRESET_DEFINITIONS[child.presetName as PresetName];
     if (!preset) return null;
-    return { ...preset.sliders, ...sliderOverrides };
-  }, [child, sliderOverrides]);
+    const base = childConfig?.sliders ?? preset.sliders;
+    return { ...base, ...sliderOverrides };
+  }, [child, childConfig, sliderOverrides]);
 
   // PIN reset state
   const [showPinReset, setShowPinReset] = useState(false);
@@ -106,10 +109,13 @@ const ChildSettingsPage = () => {
   };
 
   const handleSliderChange = (key: keyof PresetSliders, value: number) => {
+    setSliderOverrides((prev) => ({ ...prev, [key]: value }));
+    setSlidersSaved(false);
+  };
+
+  const handleSliderCommit = (key: keyof PresetSliders, value: number) => {
     if (!sliderValues) return;
     const updated = { ...sliderValues, [key]: value };
-    setSliderOverrides({ ...sliderOverrides, [key]: value });
-    setSlidersSaved(false);
 
     updatePresetMutation.mutate(
       { childId, sliders: updated },
@@ -184,6 +190,7 @@ const ChildSettingsPage = () => {
                 <SliderControls
                   values={sliderValues}
                   onChange={handleSliderChange}
+                  onCommit={handleSliderCommit}
                   disabled={updatePresetMutation.isPending}
                 />
                 {slidersSaved && (
