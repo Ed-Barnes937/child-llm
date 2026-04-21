@@ -67,12 +67,13 @@ const ChildSummaryPanel = ({
     return <LoadingSkeleton />;
   }
 
-  if (
-    !stats ||
-    (stats.messageCount === 0 &&
-      stats.conversationCount === 0 &&
-      stats.flagCount === 0)
-  ) {
+  const hasActivity =
+    stats &&
+    (stats.messageCount > 0 ||
+      stats.conversationCount > 0 ||
+      stats.flagCount > 0);
+
+  if (!hasActivity) {
     return <EmptyState presetLabel={presetLabel} />;
   }
 

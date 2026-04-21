@@ -70,12 +70,12 @@ const DashboardPage = () => {
         >
           Add child
         </Link>
-        <Link
-          to="/parent/flags"
+        <a
+          href="/parent/flags"
           className={buttonVariants({ variant: "outline", size: "sm" })}
         >
           View flags
-        </Link>
+        </a>
       </div>
 
       <div className="mt-8 space-y-4">
@@ -97,15 +97,21 @@ const DashboardPage = () => {
               onSelect={setUserSelectedChildId}
             />
             {activeChildId && (
-              <ChildSummaryPanel
-                childId={activeChildId}
-                presetLabel={
-                  PRESET_DEFINITIONS[
-                    kids.find((k) => k.id === activeChildId)
-                      ?.presetName as PresetName
-                  ]?.label
-                }
-              />
+              <div
+                role="tabpanel"
+                id={`tabpanel-${activeChildId}`}
+                aria-labelledby={`tab-${activeChildId}`}
+              >
+                <ChildSummaryPanel
+                  childId={activeChildId}
+                  presetLabel={
+                    PRESET_DEFINITIONS[
+                      kids.find((k) => k.id === activeChildId)
+                        ?.presetName as PresetName
+                    ]?.label
+                  }
+                />
+              </div>
             )}
           </>
         )}

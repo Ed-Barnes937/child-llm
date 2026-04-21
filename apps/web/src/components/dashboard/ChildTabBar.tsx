@@ -1,3 +1,4 @@
+import { useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import type { ChildSummary } from "@/api/types";
 
@@ -12,8 +13,41 @@ const ChildTabBar = ({
   selectedChildId,
   onSelect,
 }: ChildTabBarProps) => {
+  const tablistRef = useRef<HTMLDivElement>(null);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      const currentIndex = children.findIndex((c) => c.id === selectedChildId);
+      if (currentIndex === -1) return;
+
+      let nextIndex: number | null = null;
+
+      if (e.key === "ArrowRight") {
+        nextIndex = (currentIndex + 1) % children.length;
+      } else if (e.key === "ArrowLeft") {
+        nextIndex = (currentIndex - 1 + children.length) % children.length;
+      }
+
+      if (nextIndex !== null) {
+        e.preventDefault();
+        onSelect(children[nextIndex].id);
+        const buttons =
+          tablistRef.current?.querySelectorAll<HTMLButtonElement>(
+            '[role="tab"]',
+          );
+        buttons?.[nextIndex]?.focus();
+      }
+    },
+    [children, selectedChildId, onSelect],
+  );
+
   return (
-    <div role="tablist" className="flex gap-1 border-b">
+    <div
+      ref={tablistRef}
+      role="tablist"
+      className="flex gap-1 border-b"
+      onKeyDown={handleKeyDown}
+    >
       {children.map((child) => {
         const isSelected = child.id === selectedChildId;
         return (
@@ -21,6 +55,9 @@ const ChildTabBar = ({
             key={child.id}
             role="tab"
             aria-selected={isSelected}
+            aria-controls={`tabpanel-${child.id}`}
+            tabIndex={isSelected ? 0 : -1}
+            id={`tab-${child.id}`}
             onClick={() => onSelect(child.id)}
             className={cn(
               "px-4 py-2 text-sm font-medium transition-colors",
