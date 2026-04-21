@@ -48,6 +48,14 @@ const FlagsPage = () => {
   const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     setSelectedChildId(value || undefined);
+
+    const url = new URL(window.location.href);
+    if (value) {
+      url.searchParams.set("childId", value);
+    } else {
+      url.searchParams.delete("childId");
+    }
+    window.history.replaceState({}, "", url.toString());
   };
 
   return (
@@ -92,17 +100,23 @@ const FlagsPage = () => {
             </p>
           </div>
         ) : (
-          flags.map((flag) => (
-            <Link
-              key={flag.id}
-              to="/parent/conversations/$conversationId"
-              params={{ conversationId: flag.conversationId ?? "" }}
-              className="block"
-              data-testid="flag-link"
-            >
-              <FlagListItem flag={flag} onMarkReviewed={handleMarkReviewed} />
-            </Link>
-          ))
+          flags.map((flag) =>
+            flag.conversationId ? (
+              <Link
+                key={flag.id}
+                to="/parent/conversations/$conversationId"
+                params={{ conversationId: flag.conversationId }}
+                className="block"
+                data-testid="flag-link"
+              >
+                <FlagListItem flag={flag} onMarkReviewed={handleMarkReviewed} />
+              </Link>
+            ) : (
+              <div key={flag.id} data-testid="flag-link">
+                <FlagListItem flag={flag} onMarkReviewed={handleMarkReviewed} />
+              </div>
+            ),
+          )
         )}
       </div>
     </div>

@@ -1,48 +1,27 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useParentSession } from "@/queries/parent-auth";
 import { useFlagsByParent } from "@/queries/flags";
-import { conversationsApi } from "@/api/conversations";
+import { useConversationMessages } from "@/queries/conversations";
 import { ReadOnlyTranscript } from "@/components/dashboard/ReadOnlyTranscript";
 import { Button } from "@/components/ui/button";
-import type { MessageResponse } from "@/api/types";
 
 const ConversationDetailPage = () => {
   const navigate = useNavigate();
   const { conversationId } = Route.useParams();
   const { data: session, isPending } = useParentSession();
-  const [messages, setMessages] = useState<MessageResponse[]>([]);
-  const [loadingMessages, setLoadingMessages] = useState(true);
-  const [conversationTitle, setConversationTitle] = useState<string | null>(
-    null,
-  );
 
   const parentId = session?.user?.id;
 
   const { data: flags } = useFlagsByParent(parentId);
+  const { data: messages = [], isLoading: loadingMessages } =
+    useConversationMessages(conversationId);
 
   useEffect(() => {
     if (!isPending && !session) {
       navigate({ to: "/parent/login" });
     }
   }, [isPending, session, navigate]);
-
-  useEffect(() => {
-    if (!conversationId) return;
-
-    const fetchMessages = async () => {
-      try {
-        const msgs = await conversationsApi.getMessages(conversationId);
-        setMessages(msgs);
-      } catch {
-        // Silently handle — empty messages shown
-      } finally {
-        setLoadingMessages(false);
-      }
-    };
-
-    fetchMessages();
-  }, [conversationId]);
 
   // Determine flagged message IDs from the flags data
   const flaggedMessageIds = useMemo(() => {
@@ -63,20 +42,17 @@ const ConversationDetailPage = () => {
     return ids;
   }, [flags, conversationId, messages]);
 
-  // Try to get conversation title from messages or flags
-  useEffect(() => {
+  // Derive conversation title from flags data
+  const conversationTitle = useMemo(() => {
     if (flags) {
       const matchingFlag = flags.find(
         (f) => f.conversationId === conversationId,
       );
       if (matchingFlag) {
-        setConversationTitle(
-          `Conversation with ${matchingFlag.childDisplayName}`,
-        );
-        return;
+        return `Conversation with ${matchingFlag.childDisplayName}`;
       }
     }
-    setConversationTitle("Conversation Detail");
+    return "Conversation Detail";
   }, [flags, conversationId]);
 
   if (isPending) {

@@ -83,6 +83,7 @@ export const FlagListItem = ({ flag, onMarkReviewed }: FlagListItemProps) => {
               onMarkReviewed(flag.id);
             }}
             data-testid="mark-reviewed-button"
+            aria-label={flag.reviewed ? "Reviewed" : "Mark as reviewed"}
           >
             {flag.reviewed ? "\u2713 Reviewed" : "Mark as reviewed"}
           </Button>

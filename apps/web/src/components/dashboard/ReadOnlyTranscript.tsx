@@ -36,10 +36,12 @@ export const ReadOnlyTranscript = ({
               <div className="max-w-[80%]">
                 <div
                   className={`rounded-2xl px-4 py-2 ${
-                    msg.role === "child"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-foreground"
-                  } ${isFlagged ? "border-l-4 border-red-500 bg-red-50" : ""}`}
+                    isFlagged
+                      ? "border-l-4 border-red-500 bg-red-50 text-foreground"
+                      : msg.role === "child"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-foreground"
+                  }`}
                 >
                   <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
                 </div>
