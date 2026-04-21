@@ -81,6 +81,11 @@ const SettingsPage = () => {
 
   useEffect(() => {
     localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(theme));
+    if (theme.darkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   }, [theme]);
 
   if (isPending) {
@@ -118,7 +123,17 @@ const SettingsPage = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <Label>Flag notifications</Label>
+              <Label
+                className="cursor-pointer"
+                onClick={() =>
+                  setNotifications((prev) => ({
+                    ...prev,
+                    flagNotifications: !prev.flagNotifications,
+                  }))
+                }
+              >
+                Flag notifications
+              </Label>
               <Switch
                 aria-label="Flag notifications"
                 checked={notifications.flagNotifications}
@@ -131,7 +146,17 @@ const SettingsPage = () => {
               />
             </div>
             <div className="flex items-center justify-between">
-              <Label>Session limit notifications</Label>
+              <Label
+                className="cursor-pointer"
+                onClick={() =>
+                  setNotifications((prev) => ({
+                    ...prev,
+                    sessionLimitNotifications: !prev.sessionLimitNotifications,
+                  }))
+                }
+              >
+                Session limit notifications
+              </Label>
               <Switch
                 aria-label="Session limit notifications"
                 checked={notifications.sessionLimitNotifications}
@@ -154,7 +179,17 @@ const SettingsPage = () => {
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <Label>Dark mode</Label>
+              <Label
+                className="cursor-pointer"
+                onClick={() =>
+                  setTheme((prev) => ({
+                    ...prev,
+                    darkMode: !prev.darkMode,
+                  }))
+                }
+              >
+                Dark mode
+              </Label>
               <Switch
                 aria-label="Dark mode"
                 checked={theme.darkMode}
