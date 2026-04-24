@@ -9,6 +9,7 @@ import {
   createChatRoutes,
   createConversationRoutes,
   createFlagRoutes,
+  createParentDashboardRoutes,
 } from "./RouteHandlers.testHelper";
 
 export class BackendSimulator {
@@ -21,6 +22,7 @@ export class BackendSimulator {
     const chatRoutes = createChatRoutes(this.db);
     const conversationRoutes = createConversationRoutes(this.db);
     const flagRoutes = createFlagRoutes(this.db);
+    const parentDashboardRoutes = createParentDashboardRoutes(this.db);
 
     const allRoutes = [
       ...childrenRoutes,
@@ -28,6 +30,7 @@ export class BackendSimulator {
       ...chatRoutes,
       ...conversationRoutes,
       ...flagRoutes,
+      ...parentDashboardRoutes,
     ];
 
     // Register in specificity order: general first, then specific.

@@ -19,6 +19,28 @@ const toHeaders = (raw: import("http").IncomingHttpHeaders): Headers => {
   return headers;
 };
 
+const extractParentId = async (
+  server: import("vite").ViteDevServer,
+  req: import("http").IncomingMessage,
+): Promise<string | null> => {
+  const cookie = req.headers.cookie ?? "";
+  const match = cookie.match(/better-auth\.session_token=([^;]+)/);
+  if (!match) return null;
+
+  const { auth } = await server.ssrLoadModule("/src/lib/auth.ts");
+  const headers = toHeaders(req.headers);
+  const sessionUrl = new URL(
+    "/api/auth/get-session",
+    `http://${req.headers.host}`,
+  );
+  const sessionReq = new Request(sessionUrl, { method: "GET", headers });
+  const sessionRes = await auth.handler(sessionReq);
+  if (!sessionRes.ok) return null;
+
+  const body = await sessionRes.json();
+  return body?.user?.id ?? null;
+};
+
 export const serverMiddleware = (): Plugin => {
   return {
     name: "server-middleware",
@@ -69,6 +91,177 @@ export const serverMiddleware = (): Plugin => {
             if (configMatch && req.method === "GET") {
               const childId = configMatch[1];
               const result = await handlers.handleGetChildConfig(childId);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // --- Parent-authenticated child endpoints ---
+            // These require session to derive parentId for ownership checks.
+            const requireParent = async () => {
+              const parentId = await extractParentId(server, req);
+              if (!parentId) {
+                res.statusCode = 401;
+                res.end(JSON.stringify({ error: "Unauthorized" }));
+              }
+              return parentId;
+            };
+
+            // GET /api/children/:childId/stats
+            const statsMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/stats$/,
+            );
+            if (statsMatch && req.method === "GET") {
+              const parentId = await requireParent();
+              if (!parentId) return;
+              const result = await handlers.handleGetChildStats(
+                parentId,
+                statsMatch[1],
+              );
+              if (!result) {
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // PUT /api/children/:childId/preset
+            const presetMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/preset$/,
+            );
+            if (presetMatch && req.method === "PUT") {
+              const parentId = await requireParent();
+              if (!parentId) return;
+              const body = await readBody(req);
+              const sliders = JSON.parse(body);
+              const result = await handlers.handleUpdatePreset(
+                parentId,
+                presetMatch[1],
+                sliders,
+              );
+              if (!result) {
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // PUT /api/children/:childId/calibration
+            const calibrationMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/calibration$/,
+            );
+            if (calibrationMatch && req.method === "PUT") {
+              const parentId = await requireParent();
+              if (!parentId) return;
+              const body = await readBody(req);
+              const data = JSON.parse(body);
+              const result = await handlers.handleUpdateCalibration(
+                parentId,
+                calibrationMatch[1],
+                data.answers,
+              );
+              if (!result) {
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // DELETE /api/children/:childId/topics/:topicId
+            const topicDeleteMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/topics\/([^/]+)$/,
+            );
+            if (topicDeleteMatch && req.method === "DELETE") {
+              const parentId = await requireParent();
+              if (!parentId) return;
+              const result = await handlers.handleDeleteParentSeededTopic(
+                parentId,
+                topicDeleteMatch[1],
+                topicDeleteMatch[2],
+              );
+              if (!result) {
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // POST /api/children/:childId/topics
+            const topicPostMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/topics$/,
+            );
+            if (topicPostMatch && req.method === "POST") {
+              const parentId = await requireParent();
+              if (!parentId) return;
+              const body = await readBody(req);
+              const data = JSON.parse(body);
+              const result = await handlers.handleCreateParentSeededTopic(
+                parentId,
+                topicPostMatch[1],
+                data.topic,
+              );
+              if (!result) {
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // GET /api/children/:childId/topics
+            const topicGetMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)\/topics$/,
+            );
+            if (topicGetMatch && req.method === "GET") {
+              const parentId = await requireParent();
+              if (!parentId) return;
+              const result = await handlers.handleGetParentSeededTopics(
+                parentId,
+                topicGetMatch[1],
+              );
+              if (!result) {
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // PATCH /api/children/:childId
+            const childPatchMatch = url.pathname.match(
+              /^\/api\/children\/([^/]+)$/,
+            );
+            if (childPatchMatch && req.method === "PATCH") {
+              const parentId = await requireParent();
+              if (!parentId) return;
+              const body = await readBody(req);
+              const data = JSON.parse(body);
+              const result = await handlers.handleUpdateChild(
+                parentId,
+                childPatchMatch[1],
+                data,
+              );
+              if (!result) {
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify(result));
               return;
@@ -140,6 +333,49 @@ export const serverMiddleware = (): Plugin => {
             const handlers = await server.ssrLoadModule(
               "/src/server/api-handlers.ts",
             );
+
+            // PATCH /api/flags/:flagId
+            const flagPatchMatch = url.pathname.match(
+              /^\/api\/flags\/([^/]+)$/,
+            );
+            if (flagPatchMatch && req.method === "PATCH") {
+              const parentId = await extractParentId(server, req);
+              if (!parentId) {
+                res.statusCode = 401;
+                res.end(JSON.stringify({ error: "Unauthorized" }));
+                return;
+              }
+              const body = await readBody(req);
+              const data = JSON.parse(body);
+              const result = await handlers.handleUpdateFlag(
+                parentId,
+                flagPatchMatch[1],
+                data,
+              );
+              if (!result) {
+                res.statusCode = 403;
+                res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
+            // GET /api/flags?parentId=x&childId=y
+            if (req.method === "GET") {
+              const parentId = url.searchParams.get("parentId");
+              if (!parentId) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: "parentId required" }));
+                return;
+              }
+              const childId = url.searchParams.get("childId") || undefined;
+              const result = await handlers.handleGetFlags(parentId, childId);
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
 
             if (req.method === "POST") {
               const body = await readBody(req);

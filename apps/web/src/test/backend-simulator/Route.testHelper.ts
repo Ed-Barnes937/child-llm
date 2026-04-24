@@ -3,6 +3,8 @@ import type { Page, Route as PlaywrightRoute } from "@playwright/test";
 export enum Method {
   GET = "GET",
   POST = "POST",
+  PATCH = "PATCH",
+  PUT = "PUT",
   DELETE = "DELETE",
 }
 
@@ -52,6 +54,24 @@ export const post = <Body, Result extends RouteResponse>(
   handler: (req: HttpRequest<Body>) => Result,
 ): RouteDefinition<Body> => ({
   method: Method.POST,
+  urlPattern,
+  handler: handler as unknown as (req: HttpRequest<unknown>) => RouteResponse,
+});
+
+export const patch = <Body, Result extends RouteResponse>(
+  urlPattern: string,
+  handler: (req: HttpRequest<Body>) => Result,
+): RouteDefinition<Body> => ({
+  method: Method.PATCH,
+  urlPattern,
+  handler: handler as unknown as (req: HttpRequest<unknown>) => RouteResponse,
+});
+
+export const put = <Body, Result extends RouteResponse>(
+  urlPattern: string,
+  handler: (req: HttpRequest<Body>) => Result,
+): RouteDefinition<Body> => ({
+  method: Method.PUT,
   urlPattern,
   handler: handler as unknown as (req: HttpRequest<unknown>) => RouteResponse,
 });
@@ -120,7 +140,7 @@ export const connectRoutes = async (
 
       try {
         let body: unknown = undefined;
-        if (method === "POST") {
+        if (method === "POST" || method === "PATCH" || method === "PUT") {
           const postData = request.postData();
           if (postData) {
             try {
