@@ -20,6 +20,8 @@ import { Route as ChildChatNewRouteImport } from './routes/child/chat/new'
 import { Route as ChildChatConversationIdRouteImport } from './routes/child/chat/$conversationId'
 import { Route as ParentFlagsRouteImport } from './routes/parent/flags'
 import { Route as ParentConversationsConversationIdRouteImport } from './routes/parent/conversations.$conversationId'
+import { Route as ParentChildrenRouteImport } from './routes/parent/children'
+import { Route as ParentChildrenChildIdRouteImport } from './routes/parent/children.$childId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -76,11 +78,23 @@ const ParentConversationsConversationIdRoute = ParentConversationsConversationId
   path: '/parent/conversations/$conversationId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ParentChildrenRoute = ParentChildrenRouteImport.update({
+  id: '/parent/children',
+  path: '/parent/children',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParentChildrenChildIdRoute = ParentChildrenChildIdRouteImport.update({
+  id: '/parent/children/$childId',
+  path: '/parent/children/$childId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/child/home': typeof ChildHomeRoute
   '/child/login': typeof ChildLoginRoute
+  '/parent/children': typeof ParentChildrenRoute
+  '/parent/children/$childId': typeof ParentChildrenChildIdRoute
   '/parent/dashboard': typeof ParentDashboardRoute
   '/parent/flags': typeof ParentFlagsRoute
   '/parent/login': typeof ParentLoginRoute
@@ -94,6 +108,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/child/home': typeof ChildHomeRoute
   '/child/login': typeof ChildLoginRoute
+  '/parent/children': typeof ParentChildrenRoute
+  '/parent/children/$childId': typeof ParentChildrenChildIdRoute
   '/parent/dashboard': typeof ParentDashboardRoute
   '/parent/flags': typeof ParentFlagsRoute
   '/parent/login': typeof ParentLoginRoute
@@ -108,6 +124,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/child/home': typeof ChildHomeRoute
   '/child/login': typeof ChildLoginRoute
+  '/parent/children': typeof ParentChildrenRoute
+  '/parent/children/$childId': typeof ParentChildrenChildIdRoute
   '/parent/dashboard': typeof ParentDashboardRoute
   '/parent/flags': typeof ParentFlagsRoute
   '/parent/login': typeof ParentLoginRoute
@@ -123,6 +141,8 @@ export interface FileRouteTypes {
     | '/'
     | '/child/home'
     | '/child/login'
+    | '/parent/children'
+    | '/parent/children/$childId'
     | '/parent/dashboard'
     | '/parent/flags'
     | '/parent/login'
@@ -136,6 +156,8 @@ export interface FileRouteTypes {
     | '/'
     | '/child/home'
     | '/child/login'
+    | '/parent/children'
+    | '/parent/children/$childId'
     | '/parent/dashboard'
     | '/parent/flags'
     | '/parent/login'
@@ -149,6 +171,8 @@ export interface FileRouteTypes {
     | '/'
     | '/child/home'
     | '/child/login'
+    | '/parent/children'
+    | '/parent/children/$childId'
     | '/parent/dashboard'
     | '/parent/flags'
     | '/parent/login'
@@ -163,6 +187,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChildHomeRoute: typeof ChildHomeRoute
   ChildLoginRoute: typeof ChildLoginRoute
+  ParentChildrenRoute: typeof ParentChildrenRoute
+  ParentChildrenChildIdRoute: typeof ParentChildrenChildIdRoute
   ParentDashboardRoute: typeof ParentDashboardRoute
   ParentFlagsRoute: typeof ParentFlagsRoute
   ParentLoginRoute: typeof ParentLoginRoute
@@ -252,6 +278,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ParentConversationsConversationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/parent/children': {
+      id: '/parent/children'
+      path: '/parent/children'
+      fullPath: '/parent/children'
+      preLoaderRoute: typeof ParentChildrenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parent/children/$childId': {
+      id: '/parent/children/$childId'
+      path: '/parent/children/$childId'
+      fullPath: '/parent/children/$childId'
+      preLoaderRoute: typeof ParentChildrenChildIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -259,6 +299,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChildHomeRoute: ChildHomeRoute,
   ChildLoginRoute: ChildLoginRoute,
+  ParentChildrenRoute: ParentChildrenRoute,
+  ParentChildrenChildIdRoute: ParentChildrenChildIdRoute,
   ParentDashboardRoute: ParentDashboardRoute,
   ParentFlagsRoute: ParentFlagsRoute,
   ParentLoginRoute: ParentLoginRoute,
