@@ -20,6 +20,7 @@ import { Route as ChildLoginRouteImport } from "../routes/child/login";
 import { Route as ChildHomeRouteImport } from "../routes/child/home";
 import { Route as ChatNewRouteImport } from "../routes/child/chat/new";
 import { Route as ChatContinueRouteImport } from "../routes/child/chat/$conversationId";
+import { Route as SettingsRouteImport } from "../routes/parent/settings";
 import { Route as ChildrenListRouteImport } from "../routes/parent/children";
 import { Route as ChildSettingsRouteImport } from "../routes/parent/children.$childId";
 
@@ -83,6 +84,12 @@ const chatContinueRoute = createRoute({
   component: ChatContinueRouteImport.options.component,
 });
 
+const settingsRoute = createRoute({
+  getParentRoute: () => testRootRoute,
+  path: "/parent/settings",
+  component: SettingsRouteImport.options.component,
+});
+
 const childrenListRoute = createRoute({
   getParentRoute: () => testRootRoute,
   path: "/parent/children",
@@ -105,6 +112,7 @@ const testRouteTree = testRootRoute.addChildren([
   childHomeRoute,
   chatNewRoute,
   chatContinueRoute,
+  settingsRoute,
   childrenListRoute,
   childSettingsRoute,
 ]);
