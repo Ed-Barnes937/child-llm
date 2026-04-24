@@ -75,6 +75,13 @@ export interface MockCalibrationAnswer {
   customAnswer: string | null;
 }
 
+export interface MockParentSeededTopic {
+  id: string;
+  childId: string;
+  topic: string;
+  createdAt: string;
+}
+
 export interface ChatStreamScenario {
   tokens: string[];
   flag?: {
@@ -96,7 +103,9 @@ export class BackendSimulatorDb {
   readonly conversationsList: MockConversation[] = [];
   readonly messagesList: MockMessage[] = [];
   readonly flagsList: MockFlag[] = [];
+  readonly parentSeededTopicsList: MockParentSeededTopic[] = [];
   private chatStreamScenario: ChatStreamScenario | null = null;
+  private sliderOverridesMap: Map<string, Record<string, number>> = new Map();
 
   createParent = (data: {
     name: string;
@@ -317,9 +326,11 @@ export class BackendSimulatorDb {
 
   getChildConfig = (childId: string) => {
     const child = this.findChildById(childId);
-    const sliders = child
+    const defaults = child
       ? PRESET_DEFINITIONS[child.presetName].sliders
       : PRESET_DEFINITIONS["confident-reader"].sliders;
+    const overrides = this.sliderOverridesMap.get(childId);
+    const sliders = overrides ? { ...defaults, ...overrides } : defaults;
     const answers = this.getCalibrationAnswers(childId);
     return {
       sliders,
@@ -356,5 +367,143 @@ export class BackendSimulatorDb {
     };
     this.flagsList.push(flag);
     return flag;
+  };
+
+  // --- Phase 6: Parent Dashboard ---
+
+  getFlagsByParent = (parentId: string, childId?: string): MockFlag[] => {
+    const parentChildIds = new Set(
+      this.children.filter((c) => c.parentId === parentId).map((c) => c.id),
+    );
+    return this.flagsList
+      .filter(
+        (f) =>
+          parentChildIds.has(f.childId) && (!childId || f.childId === childId),
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+  };
+
+  updateFlagReviewed = (flagId: string, reviewed: boolean): MockFlag | null => {
+    const flag = this.flagsList.find((f) => f.id === flagId);
+    if (!flag) return null;
+    flag.reviewed = reviewed;
+    return flag;
+  };
+
+  getChildStats = (
+    childId: string,
+  ): {
+    messageCount: number;
+    conversationCount: number;
+    topTopics: string[];
+    flagCount: number;
+    lastActive: string | null;
+  } => {
+    const conversations = this.conversationsList.filter(
+      (c) => c.childId === childId,
+    );
+    const conversationIds = new Set(conversations.map((c) => c.id));
+    const messageCount = this.messagesList.filter((m) =>
+      conversationIds.has(m.conversationId),
+    ).length;
+
+    const topicCounts: Record<string, number> = {};
+    for (const flag of this.flagsList.filter((f) => f.childId === childId)) {
+      if (flag.topics) {
+        const topics = JSON.parse(flag.topics) as string[];
+        for (const t of topics) {
+          topicCounts[t] = (topicCounts[t] ?? 0) + 1;
+        }
+      }
+    }
+    const topTopics = Object.entries(topicCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([topic]) => topic);
+
+    const flagCount = this.flagsList.filter(
+      (f) => f.childId === childId && !f.reviewed,
+    ).length;
+
+    const lastActive =
+      conversations.length > 0
+        ? conversations.sort(
+            (a, b) =>
+              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+          )[0].updatedAt
+        : null;
+
+    return {
+      messageCount,
+      conversationCount: conversations.length,
+      topTopics,
+      flagCount,
+      lastActive,
+    };
+  };
+
+  updateChild = (
+    childId: string,
+    data: { displayName?: string; presetName?: PresetName; pin?: string },
+  ): MockChild | null => {
+    const child = this.children.find((c) => c.id === childId);
+    if (!child) return null;
+    if (data.displayName !== undefined) child.displayName = data.displayName;
+    if (data.presetName !== undefined) child.presetName = data.presetName;
+    if (data.pin !== undefined) child.pinHash = data.pin;
+    return child;
+  };
+
+  updatePreset = (
+    childId: string,
+    sliders: Record<string, number>,
+  ): Record<string, number> => {
+    const child = this.findChildById(childId);
+    const defaults = child
+      ? PRESET_DEFINITIONS[child.presetName].sliders
+      : PRESET_DEFINITIONS["confident-reader"].sliders;
+    const merged = { ...defaults, ...sliders };
+    this.sliderOverridesMap.set(childId, merged);
+    return merged;
+  };
+
+  updateCalibration = (childId: string, answers: CalibrationAnswer[]): void => {
+    for (let i = this.calibrationAnswersList.length - 1; i >= 0; i--) {
+      if (this.calibrationAnswersList[i].childId === childId) {
+        this.calibrationAnswersList.splice(i, 1);
+      }
+    }
+    this.storeCalibrationAnswers(childId, answers);
+  };
+
+  getParentSeededTopics = (childId: string): MockParentSeededTopic[] => {
+    return this.parentSeededTopicsList
+      .filter((t) => t.childId === childId)
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+  };
+
+  createParentSeededTopic = (
+    childId: string,
+    topic: string,
+  ): MockParentSeededTopic => {
+    const entry: MockParentSeededTopic = {
+      id: generateId(),
+      childId,
+      topic,
+      createdAt: new Date().toISOString(),
+    };
+    this.parentSeededTopicsList.push(entry);
+    return entry;
+  };
+
+  deleteParentSeededTopic = (topicId: string): void => {
+    const idx = this.parentSeededTopicsList.findIndex((t) => t.id === topicId);
+    if (idx !== -1) this.parentSeededTopicsList.splice(idx, 1);
   };
 }

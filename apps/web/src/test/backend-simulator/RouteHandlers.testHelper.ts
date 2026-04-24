@@ -4,7 +4,7 @@ import type {
   HttpRequest,
   RouteResponse,
 } from "./Route.testHelper";
-import { get, post, del } from "./Route.testHelper";
+import { get, post, patch, put, del } from "./Route.testHelper";
 import { EndpointKey } from "./Endpoint.testHelper";
 import { handleEndpointBehaviour } from "./EndpointBehaviourManager.testHelper";
 import type {
@@ -13,6 +13,7 @@ import type {
   CalibrationAnswer,
   FlagType,
 } from "@child-safe-llm/shared";
+import type { MockFlag } from "./BackendSimulatorDb.testHelper";
 
 const json = (data: unknown, status = 200): RouteResponse => ({
   status,
@@ -438,5 +439,148 @@ export const createFlagRoutes = (
           return json({ id: flag.id });
         },
       ),
+  ),
+
+  get("/flags", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(EndpointKey.GET_FLAGS),
+      () => {
+        const parentId = req.queryParams["parentId"];
+        if (!parentId) return json({ error: "parentId required" }, 400);
+        const childId = req.queryParams["childId"];
+        const flags = db.getFlagsByParent(parentId, childId || undefined);
+        const enriched = flags.map((f: MockFlag) => {
+          const child = db.findChildById(f.childId);
+          return {
+            ...f,
+            childDisplayName: child?.displayName ?? "Unknown",
+          };
+        });
+        return json(enriched);
+      },
+    ),
+  ),
+
+  patch("/flags/:flagId", (req: HttpRequest<{ reviewed: boolean }>) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(EndpointKey.UPDATE_FLAG),
+      () => {
+        const { flagId } = req.pathParams;
+        const flag = db.updateFlagReviewed(flagId, req.body.reviewed);
+        if (!flag) return json({ error: "Flag not found" }, 404);
+        return json(flag);
+      },
+    ),
+  ),
+];
+
+export const createParentDashboardRoutes = (
+  db: BackendSimulatorDb,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): RouteDefinition<any>[] => [
+  get("/children/:childId/stats", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(EndpointKey.GET_CHILD_STATS),
+      () => {
+        const { childId } = req.pathParams;
+        return json(db.getChildStats(childId));
+      },
+    ),
+  ),
+
+  patch(
+    "/children/:childId",
+    (
+      req: HttpRequest<{
+        displayName?: string;
+        presetName?: PresetName;
+        pin?: string;
+      }>,
+    ) =>
+      handleEndpointBehaviour(
+        db.endpointBehaviourManager.getBehaviour(EndpointKey.UPDATE_CHILD),
+        () => {
+          const { childId } = req.pathParams;
+          const child = db.updateChild(childId, req.body);
+          if (!child) return json({ error: "Child not found" }, 404);
+          return json({
+            id: child.id,
+            displayName: child.displayName,
+            username: child.username,
+            presetName: child.presetName,
+          });
+        },
+      ),
+  ),
+
+  put("/children/:childId/preset", (req: HttpRequest<Record<string, number>>) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(EndpointKey.UPDATE_PRESET),
+      () => {
+        const { childId } = req.pathParams;
+        const sliders = db.updatePreset(childId, req.body);
+        return json({ sliders });
+      },
+    ),
+  ),
+
+  put(
+    "/children/:childId/calibration",
+    (req: HttpRequest<{ answers: CalibrationAnswer[] }>) =>
+      handleEndpointBehaviour(
+        db.endpointBehaviourManager.getBehaviour(
+          EndpointKey.UPDATE_CALIBRATION,
+        ),
+        () => {
+          const { childId } = req.pathParams;
+          db.updateCalibration(childId, req.body.answers);
+          const answers = db.getCalibrationAnswers(childId);
+          return json({
+            calibrationAnswers: answers.map((a) => ({
+              questionId: a.questionId,
+              selectedLevel: a.selectedLevel,
+              customAnswer: a.customAnswer,
+            })),
+          });
+        },
+      ),
+  ),
+
+  get("/children/:childId/topics", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(
+        EndpointKey.GET_PARENT_SEEDED_TOPICS,
+      ),
+      () => {
+        const { childId } = req.pathParams;
+        return json(db.getParentSeededTopics(childId));
+      },
+    ),
+  ),
+
+  post("/children/:childId/topics", (req: HttpRequest<{ topic: string }>) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(
+        EndpointKey.CREATE_PARENT_SEEDED_TOPIC,
+      ),
+      () => {
+        const { childId } = req.pathParams;
+        const topic = db.createParentSeededTopic(childId, req.body.topic);
+        return json(topic);
+      },
+    ),
+  ),
+
+  del("/children/:childId/topics/:topicId", (req: HttpRequest) =>
+    handleEndpointBehaviour(
+      db.endpointBehaviourManager.getBehaviour(
+        EndpointKey.DELETE_PARENT_SEEDED_TOPIC,
+      ),
+      () => {
+        const { topicId } = req.pathParams;
+        db.deleteParentSeededTopic(topicId);
+        return json({ success: true });
+      },
+    ),
   ),
 ];

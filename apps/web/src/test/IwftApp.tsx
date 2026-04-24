@@ -20,6 +20,11 @@ import { Route as ChildLoginRouteImport } from "../routes/child/login";
 import { Route as ChildHomeRouteImport } from "../routes/child/home";
 import { Route as ChatNewRouteImport } from "../routes/child/chat/new";
 import { Route as ChatContinueRouteImport } from "../routes/child/chat/$conversationId";
+import { Route as FlagsRouteImport } from "../routes/parent/flags";
+import { Route as ConversationDetailRouteImport } from "../routes/parent/conversations.$conversationId";
+import { Route as SettingsRouteImport } from "../routes/parent/settings";
+import { Route as ChildrenListRouteImport } from "../routes/parent/children";
+import { Route as ChildSettingsRouteImport } from "../routes/parent/children.$childId";
 
 // Clean root route: no <html>/<body>/<Scripts>, just renders children
 const testRootRoute = createRootRoute({
@@ -81,6 +86,36 @@ const chatContinueRoute = createRoute({
   component: ChatContinueRouteImport.options.component,
 });
 
+const flagsRoute = createRoute({
+  getParentRoute: () => testRootRoute,
+  path: "/parent/flags",
+  component: FlagsRouteImport.options.component,
+});
+
+const conversationDetailRoute = createRoute({
+  getParentRoute: () => testRootRoute,
+  path: "/parent/conversations/$conversationId",
+  component: ConversationDetailRouteImport.options.component,
+});
+
+const settingsRoute = createRoute({
+  getParentRoute: () => testRootRoute,
+  path: "/parent/settings",
+  component: SettingsRouteImport.options.component,
+});
+
+const childrenListRoute = createRoute({
+  getParentRoute: () => testRootRoute,
+  path: "/parent/children",
+  component: ChildrenListRouteImport.options.component,
+});
+
+const childSettingsRoute = createRoute({
+  getParentRoute: () => testRootRoute,
+  path: "/parent/children/$childId",
+  component: ChildSettingsRouteImport.options.component,
+});
+
 const testRouteTree = testRootRoute.addChildren([
   indexRoute,
   registerRoute,
@@ -91,6 +126,11 @@ const testRouteTree = testRootRoute.addChildren([
   childHomeRoute,
   chatNewRoute,
   chatContinueRoute,
+  flagsRoute,
+  conversationDetailRoute,
+  settingsRoute,
+  childrenListRoute,
+  childSettingsRoute,
 ]);
 
 interface IwftAppProps {

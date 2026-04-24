@@ -170,3 +170,47 @@ export interface ChildConfigResponse {
   sliders: PresetSliders;
   calibrationAnswers: CalibrationAnswer[];
 }
+
+// Flags (parent dashboard)
+export interface FlagDetail {
+  id: string;
+  childId: string;
+  conversationId: string | null;
+  messageId: string | null;
+  type: "sensitive" | "blocked" | "validation-failed" | "reported";
+  reason: string;
+  childMessage: string | null;
+  aiResponse: string | null;
+  topics: string | null;
+  reviewed: boolean;
+  createdAt: string;
+  childDisplayName: string;
+}
+
+export interface UpdateFlagRequest {
+  reviewed: boolean;
+}
+
+// Child Stats
+export interface ChildStats {
+  messageCount: number;
+  conversationCount: number;
+  topTopics: string[];
+  flagCount: number;
+  lastActive: string | null;
+}
+
+// Child Update
+export interface UpdateChildRequest {
+  displayName?: string;
+  presetName?: PresetName;
+  pin?: string;
+}
+
+// Parent-seeded Topics
+export interface ParentSeededTopic {
+  id: string;
+  childId: string;
+  topic: string;
+  createdAt: string;
+}
