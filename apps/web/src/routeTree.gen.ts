@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ParentRegisterRouteImport } from './routes/parent/register'
 import { Route as ParentOnboardingRouteImport } from './routes/parent/onboarding'
 import { Route as ParentLoginRouteImport } from './routes/parent/login'
+import { Route as ParentSettingsRouteImport } from './routes/parent/settings'
 import { Route as ParentDashboardRouteImport } from './routes/parent/dashboard'
 import { Route as ChildLoginRouteImport } from './routes/child/login'
 import { Route as ChildHomeRouteImport } from './routes/child/home'
@@ -41,6 +42,11 @@ const ParentOnboardingRoute = ParentOnboardingRouteImport.update({
 const ParentLoginRoute = ParentLoginRouteImport.update({
   id: '/parent/login',
   path: '/parent/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParentSettingsRoute = ParentSettingsRouteImport.update({
+  id: '/parent/settings',
+  path: '/parent/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ParentDashboardRoute = ParentDashboardRouteImport.update({
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/parent/login': typeof ParentLoginRoute
   '/parent/onboarding': typeof ParentOnboardingRoute
   '/parent/register': typeof ParentRegisterRoute
+  '/parent/settings': typeof ParentSettingsRoute
   '/child/chat/$conversationId': typeof ChildChatConversationIdRoute
   '/child/chat/new': typeof ChildChatNewRoute
   '/parent/conversations/$conversationId': typeof ParentConversationsConversationIdRoute
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/parent/login': typeof ParentLoginRoute
   '/parent/onboarding': typeof ParentOnboardingRoute
   '/parent/register': typeof ParentRegisterRoute
+  '/parent/settings': typeof ParentSettingsRoute
   '/child/chat/$conversationId': typeof ChildChatConversationIdRoute
   '/child/chat/new': typeof ChildChatNewRoute
   '/parent/conversations/$conversationId': typeof ParentConversationsConversationIdRoute
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/parent/login': typeof ParentLoginRoute
   '/parent/onboarding': typeof ParentOnboardingRoute
   '/parent/register': typeof ParentRegisterRoute
+  '/parent/settings': typeof ParentSettingsRoute
   '/child/chat/$conversationId': typeof ChildChatConversationIdRoute
   '/child/chat/new': typeof ChildChatNewRoute
   '/parent/conversations/$conversationId': typeof ParentConversationsConversationIdRoute
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/parent/login'
     | '/parent/onboarding'
     | '/parent/register'
+    | '/parent/settings'
     | '/child/chat/$conversationId'
     | '/child/chat/new'
     | '/parent/conversations/$conversationId'
@@ -163,6 +173,7 @@ export interface FileRouteTypes {
     | '/parent/login'
     | '/parent/onboarding'
     | '/parent/register'
+    | '/parent/settings'
     | '/child/chat/$conversationId'
     | '/child/chat/new'
     | '/parent/conversations/$conversationId'
@@ -178,6 +189,7 @@ export interface FileRouteTypes {
     | '/parent/login'
     | '/parent/onboarding'
     | '/parent/register'
+    | '/parent/settings'
     | '/child/chat/$conversationId'
     | '/child/chat/new'
     | '/parent/conversations/$conversationId'
@@ -194,6 +206,7 @@ export interface RootRouteChildren {
   ParentLoginRoute: typeof ParentLoginRoute
   ParentOnboardingRoute: typeof ParentOnboardingRoute
   ParentRegisterRoute: typeof ParentRegisterRoute
+  ParentSettingsRoute: typeof ParentSettingsRoute
   ChildChatConversationIdRoute: typeof ChildChatConversationIdRoute
   ChildChatNewRoute: typeof ChildChatNewRoute
   ParentConversationsConversationIdRoute: typeof ParentConversationsConversationIdRoute
@@ -234,6 +247,13 @@ declare module '@tanstack/react-router' {
       path: '/parent/dashboard'
       fullPath: '/parent/dashboard'
       preLoaderRoute: typeof ParentDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parent/settings': {
+      id: '/parent/settings'
+      path: '/parent/settings'
+      fullPath: '/parent/settings'
+      preLoaderRoute: typeof ParentSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/child/login': {
@@ -306,6 +326,7 @@ const rootRouteChildren: RootRouteChildren = {
   ParentLoginRoute: ParentLoginRoute,
   ParentOnboardingRoute: ParentOnboardingRoute,
   ParentRegisterRoute: ParentRegisterRoute,
+  ParentSettingsRoute: ParentSettingsRoute,
   ChildChatConversationIdRoute: ChildChatConversationIdRoute,
   ChildChatNewRoute: ChildChatNewRoute,
   ParentConversationsConversationIdRoute: ParentConversationsConversationIdRoute,
