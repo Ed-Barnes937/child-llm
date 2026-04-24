@@ -59,6 +59,16 @@ export const useCreateChild = () => {
 
 // --- Phase 6: Parent Dashboard ---
 
+export const childConfigOptions = (childId: string | undefined) =>
+  queryOptions({
+    queryKey: ["child-config", childId],
+    queryFn: () => childrenApi.getConfig(childId!),
+    enabled: !!childId,
+  });
+
+export const useChildConfig = (childId: string | undefined) =>
+  useQuery(childConfigOptions(childId));
+
 export const childStatsOptions = (childId: string | undefined) =>
   queryOptions({
     queryKey: ["child-stats", childId],
@@ -100,6 +110,9 @@ export const useUpdatePreset = () => {
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["child-stats", variables.childId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["child-config", variables.childId],
       });
     },
   });
