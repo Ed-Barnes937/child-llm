@@ -105,6 +105,7 @@ export class BackendSimulatorDb {
   readonly flagsList: MockFlag[] = [];
   readonly parentSeededTopicsList: MockParentSeededTopic[] = [];
   private chatStreamScenario: ChatStreamScenario | null = null;
+  private sliderOverridesMap: Map<string, Record<string, number>> = new Map();
 
   createParent = (data: {
     name: string;
@@ -325,9 +326,11 @@ export class BackendSimulatorDb {
 
   getChildConfig = (childId: string) => {
     const child = this.findChildById(childId);
-    const sliders = child
+    const defaults = child
       ? PRESET_DEFINITIONS[child.presetName].sliders
       : PRESET_DEFINITIONS["confident-reader"].sliders;
+    const overrides = this.sliderOverridesMap.get(childId);
+    const sliders = overrides ? { ...defaults, ...overrides } : defaults;
     const answers = this.getCalibrationAnswers(childId);
     return {
       sliders,
@@ -462,7 +465,9 @@ export class BackendSimulatorDb {
     const defaults = child
       ? PRESET_DEFINITIONS[child.presetName].sliders
       : PRESET_DEFINITIONS["confident-reader"].sliders;
-    return { ...defaults, ...sliders };
+    const merged = { ...defaults, ...sliders };
+    this.sliderOverridesMap.set(childId, merged);
+    return merged;
   };
 
   updateCalibration = (childId: string, answers: CalibrationAnswer[]): void => {
