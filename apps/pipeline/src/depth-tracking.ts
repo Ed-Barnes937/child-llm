@@ -1,11 +1,3 @@
-/**
- * Conversation depth tracking for sensitive topics.
- *
- * Counts how many consecutive exchanges in a conversation touch sensitive
- * topics. After a threshold, returns a redirect response pointing the
- * child to their parent.
- */
-
 import { detectSensitiveTopics } from "./sensitive-topics.js";
 
 const DEFAULT_THRESHOLD = 3;
@@ -19,40 +11,70 @@ export interface DepthTrackingResult {
   redirectResponse: string | null;
 }
 
+const isExchangeSensitive = (
+  userContent: string,
+  assistantContent?: string,
+): boolean => {
+  if (detectSensitiveTopics(userContent).isSensitive) return true;
+  if (assistantContent && detectSensitiveTopics(assistantContent).isSensitive)
+    return true;
+  return false;
+};
+
+const findLastByRole = (
+  messages: { role: string; content: string }[],
+  role: string,
+): { role: string; content: string } | undefined => {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === role) return messages[i];
+  }
+  return undefined;
+};
+
 /**
  * Analyses conversation history to count consecutive sensitive exchanges
- * at the end of the conversation. Returns whether the threshold has been
- * reached and a redirect response should replace the LLM call.
+ * at the end of the conversation. An exchange is sensitive if either the
+ * child's message or the AI's response contains sensitive content — this
+ * catches indirect probing where the child uses innocuous phrasing but the
+ * AI introduces sensitive terms.
  */
 export const checkConversationDepth = (
   history: { role: string; content: string }[],
   currentMessage: string,
   threshold: number = DEFAULT_THRESHOLD,
 ): DepthTrackingResult => {
-  // Check the current message first
-  const currentResult = detectSensitiveTopics(currentMessage);
-  if (!currentResult.isSensitive) {
+  const workingHistory = [...history];
+  if (
+    workingHistory.length > 0 &&
+    workingHistory[workingHistory.length - 1].role === "user" &&
+    workingHistory[workingHistory.length - 1].content === currentMessage
+  ) {
+    workingHistory.pop();
+  }
+
+  // Current exchange: child's message + the last AI response they're replying to
+  const lastAssistant = findLastByRole(workingHistory, "assistant");
+  if (!isExchangeSensitive(currentMessage, lastAssistant?.content)) {
     return { shouldRedirect: false, sensitiveCount: 0, redirectResponse: null };
   }
 
-  // Count backwards through user messages to find consecutive sensitive ones
   let consecutiveSensitive = 1;
 
-  // Walk backwards through history, only counting user messages.
-  // Skip the last user message if it matches currentMessage — callers
-  // may include the current message in the history array.
-  const userMessages = history.filter((m) => m.role === "user");
-  if (
-    userMessages.length > 0 &&
-    userMessages[userMessages.length - 1].content === currentMessage
-  ) {
-    userMessages.pop();
+  // Build exchange pairs: each user message paired with its following assistant response
+  const exchanges: { userContent: string; assistantContent?: string }[] = [];
+  for (let i = 0; i < workingHistory.length; i++) {
+    if (workingHistory[i].role === "user") {
+      const next = workingHistory[i + 1];
+      exchanges.push({
+        userContent: workingHistory[i].content,
+        assistantContent: next?.role === "assistant" ? next.content : undefined,
+      });
+    }
   }
-  userMessages.reverse();
 
-  for (const msg of userMessages) {
-    const result = detectSensitiveTopics(msg.content);
-    if (result.isSensitive) {
+  for (let i = exchanges.length - 1; i >= 0; i--) {
+    const ex = exchanges[i];
+    if (isExchangeSensitive(ex.userContent, ex.assistantContent)) {
       consecutiveSensitive++;
     } else {
       break;

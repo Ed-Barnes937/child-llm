@@ -54,7 +54,7 @@ describe("checkConversationDepth", () => {
     expect(result.sensitiveCount).toBe(2);
   });
 
-  it("ignores assistant messages in the count", () => {
+  it("counts exchanges where user messages are sensitive regardless of assistant content", () => {
     const history = [
       { role: "user", content: "What happens when you die?" },
       { role: "assistant", content: "Death is a natural part of life..." },
@@ -64,6 +64,59 @@ describe("checkConversationDepth", () => {
     const result = checkConversationDepth(history, "Will my dog die?", 3);
     expect(result.shouldRedirect).toBe(true);
     expect(result.sensitiveCount).toBe(3);
+  });
+
+  it("treats exchange as sensitive when only the AI response contains sensitive terms", () => {
+    const history = [
+      { role: "user", content: "Tell me more about that" },
+      {
+        role: "assistant",
+        content:
+          "This process is called sexual intercourse, and it's how babies are made.",
+      },
+    ];
+    const result = checkConversationDepth(history, "What happens next?");
+    // Neither user message is sensitive, but the assistant response
+    // mentions "sexual" → both exchanges are sensitive
+    expect(result.sensitiveCount).toBe(2);
+  });
+
+  it("redirects when AI responses create a sensitive chain despite innocuous child messages", () => {
+    const history = [
+      { role: "user", content: "How are babys made?" },
+      {
+        role: "assistant",
+        content: "A baby is made when cells join together during pregnancy.",
+      },
+      { role: "user", content: "Tell me more about that" },
+      {
+        role: "assistant",
+        content: "During sexual reproduction, a sperm cell meets an egg cell.",
+      },
+    ];
+    const result = checkConversationDepth(history, "What happens next?", 3);
+    // Child messages are all innocuous (typo dodges regex, follow-ups generic)
+    // but each AI response mentions pregnancy / sexual → all 3 exchanges sensitive
+    expect(result.shouldRedirect).toBe(true);
+    expect(result.sensitiveCount).toBe(3);
+  });
+
+  it("breaks the chain when neither party mentions sensitive content", () => {
+    const history = [
+      { role: "user", content: "Tell me about pregnancy" },
+      { role: "assistant", content: "Pregnancy is when a baby grows..." },
+      { role: "user", content: "What is the biggest planet?" },
+      { role: "assistant", content: "Jupiter is the biggest planet!" },
+      { role: "user", content: "Tell me more about that" },
+      {
+        role: "assistant",
+        content: "This is called sexual reproduction.",
+      },
+    ];
+    const result = checkConversationDepth(history, "What happens next?", 3);
+    // Exchange 3 + current are sensitive, but exchange 2 (Jupiter) breaks the chain
+    expect(result.shouldRedirect).toBe(false);
+    expect(result.sensitiveCount).toBe(2);
   });
 
   it("does not double-count when history includes the current message", () => {
