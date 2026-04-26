@@ -390,6 +390,92 @@ test.describe("Pipeline flag persistence", () => {
   });
 });
 
+test.describe("Pipeline flag persistence: indirect sensitive probing", () => {
+  test("flags are persisted when child uses innocuous follow-ups but AI introduces sensitive terms", async ({
+    mount,
+    page,
+    backendSimulator,
+  }) => {
+    const { child } = await seedAndLogin(backendSimulator.db, page);
+
+    // Turn 1: child asks an innocuous (misspelled) question, AI responds
+    // with educational content that includes sensitive terms like "pregnancy"
+    backendSimulator.db.setChatStreamScenario({
+      tokens: [
+        "A baby grows inside the mum's tummy during pregnancy. It takes about nine months!",
+      ],
+      flag: {
+        type: "sensitive",
+        reason: "Sensitive topic detected: reproduction",
+        topics: ["reproduction"],
+        childMessage: "How are babys made?",
+        aiResponse:
+          "A baby grows inside the mum's tummy during pregnancy. It takes about nine months!",
+      },
+    });
+
+    await mount(<IwftApp initialPath="/child/chat/new" />);
+    await backendSimulator.install(page);
+
+    await page
+      .getByPlaceholder("Type a message...")
+      .fill("How are babys made?");
+    await page.getByRole("button", { name: "Send" }).click();
+
+    await expect(page.getByTestId("ai-message")).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByPlaceholder("Type a message...")).toBeEnabled();
+
+    // Turn 2: child follows up with generic phrasing, pipeline flags again
+    // because its own prior response contained sensitive terms
+    backendSimulator.db.setChatStreamScenario({
+      tokens: [
+        "The sperm travels through the mum's body during a process called conception.",
+      ],
+      flag: {
+        type: "sensitive",
+        reason: "Sensitive topic detected: reproduction",
+        topics: ["reproduction"],
+        childMessage: "How does the sperm get to the egg?",
+        aiResponse:
+          "The sperm travels through the mum's body during a process called conception.",
+      },
+    });
+
+    await page
+      .getByPlaceholder("Type a message...")
+      .fill("How does the sperm get to the egg?");
+    await page.getByRole("button", { name: "Send" }).click();
+
+    await expect(page.getByTestId("ai-message")).toHaveCount(2, {
+      timeout: 10000,
+    });
+    await expect(page.getByPlaceholder("Type a message...")).toBeEnabled();
+
+    // Both turns should have created flags
+    const flags = backendSimulator.db.flagsList.filter(
+      (f) => f.childId === child.id && f.type === "sensitive",
+    );
+    expect(flags.length).toBe(2);
+    expect(flags.every((f) => f.reason.includes("reproduction"))).toBe(true);
+
+    // Both AI messages should be persisted as flagged
+    const conversations = backendSimulator.db.getConversationsByChild(child.id);
+    const messages = backendSimulator.db.getMessagesByConversation(
+      conversations[0].id,
+    );
+    const aiMessages = messages.filter((m) => m.role === "ai");
+    expect(aiMessages.length).toBe(2);
+    expect(aiMessages.every((m) => m.flagged)).toBe(true);
+
+    // Flags include conversation references so the parent flags page can
+    // link through to the conversation detail (tested in parent-integration)
+    expect(flags[0].conversationId).toBe(conversations[0].id);
+    expect(flags[1].conversationId).toBe(conversations[0].id);
+  });
+});
+
 test.describe("Home page conversations list", () => {
   test("shows previous conversations on home page", async ({
     mount,
