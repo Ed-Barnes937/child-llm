@@ -42,7 +42,7 @@ Layer codes (Q* = query path, R* = response path) refer to the pipeline-layers r
 | Whole-conversation (crescendo) check | Q5, R6 | P1 | Nowhere — net-new |
 | Behavioural signals — rate / velocity / repeated-probe | Q5 | P1 | Partial in **9.5** (PIN brute-force only, after billing) |
 | Prompt-injection shield on input | input | P1 | Nowhere — net-new |
-| Dedicated grooming/CSAM path + human-in-the-loop | — | P1 / mandatory | Nowhere — net-new |
+| Dedicated grooming/CSAM path + human-in-the-loop | — | P1 / mandatory | Nowhere — net-new (UK: out of OSA user-to-user scope while text-only 1:1 — ADR-0007) |
 | Safe-by-default presets + honest disclosure + parent visibility | parental | P2 | Partial across Phase 2 / Phase 6 |
 | Hash PINs (stop storing plaintext) | — | security | ✅ **Shipped in PR #19 (#17, scrypt)** |
 | Force password change on first login (default password = username) | — | security | New — surfaced by PR #19 |
@@ -111,11 +111,24 @@ none mean abandoning the current setup. Each item states its success check.
   - **Verify:** known injection strings in the trick set are caught pre-generation.
 
 - [ ] **6.5.8** Grooming / CSAM escalation path + human-in-the-loop — *mandatory*
-  - This category must **never** rest on the general judge. Route to dedicated detection
-    (Thorn/PhotoDNA-class), a clear reporting process, and a person in the loop. Text-first
-    today; becomes hard-blocking the day media upload ships (NCMEC/IWF duties).
-  - **Verify:** a defined escalation + reporting path exists and is documented; not handed
-    to an LLM. *Needs legal groundwork — flag for review, don't self-certify.*
+  - This category must **never** rest on the general judge. Route to dedicated detection,
+    a clear reporting process, and a person in the loop.
+  - **UK scope finding (2026-06-20, see ADR-0007).** A one-to-one, text-only child↔AI chat
+    falls *outside* the Online Safety Act's user-to-user regime, so the **CSEA reporting
+    duty (NCA CSEA-IRP, in effect 7 Apr 2026) does not bind the product as built** — that
+    duty applies to user-to-user services only, but where it applies there is **no size or
+    risk threshold**. Two roadmap features flip us into the full regime: (a) **any
+    user-to-user feature** (children sharing conversations, group/community), and (b)
+    **media upload** (pulls in the indecent-images criminal regime + IWF hash-matching +
+    NCA reporting). Criminal law on CSAM applies regardless of OSA scope. *Not legal advice;
+    don't self-certify — the parent-views-conversations feature is the one edge to confirm
+    against the user-to-user test with counsel.*
+  - **Verify (now — text-only 1:1 launch):** a documented manual escalation + safe-handling
+    path exists, owned by a named person, not handed to an LLM; the OSA scope determination
+    is recorded (ADR-0007) and lawyer-reviewed.
+  - **Verify (gated — the day sharing OR media upload ships):** NCA CSEA-IRP reporting
+    integration + IWF hash-list matching are in place *before* that feature reaches users;
+    re-run the scope determination.
 
 ### Tier P2 — turn control into real control
 

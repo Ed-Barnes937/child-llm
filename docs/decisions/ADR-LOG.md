@@ -121,3 +121,47 @@ format server-side (4 digits → 400).
 **Consequences.** No plaintext credentials at rest. Bcrypt/Argon2 were avoided to keep the
 dependency surface minimal. Follow-up: the default child password is the username — force a
 change on first login (Phase 6.5.11).
+
+---
+
+## ADR-0007 — UK launch is out of OSA user-to-user scope while text-only and one-to-one
+
+- **Status:** Accepted
+- **Date:** 2026-06-20
+
+**Context.** Initial launch is **UK-exclusive**. The product is a one-to-one chat between a
+child and the AI (gpt-4o-mini via OpenRouter), text only, with no feature letting users
+share content with each other. We needed to know which UK CSAM/CSEA obligations bind us —
+in particular the CSEA content reporting duty that took effect **7 April 2026**.
+
+Ofcom's chatbot explainer states plainly: *"chatbots are not subject to regulation at all if
+they only allow people to interact with the chatbot itself and no other users."* A chatbot
+is in Online Safety Act scope only when it is part of a **user-to-user** service (users
+share content with each other), provides **search**, or generates **pornographic material**.
+The 7 Apr 2026 CSEA reporting duty (report to the NCA via CSEA-IRP) applies to **user-to-user
+services only** — but where it applies there is **no size or risk threshold** and penalties
+reach 10% of global revenue or £18m.
+
+**Decision.** Treat the text-only, one-to-one launch as **outside the OSA user-to-user
+regime**, and therefore **not bound by the 7 Apr 2026 CSEA reporting duty**. We do **not**
+build NCA CSEA-IRP reporting or IWF hash-matching for the initial launch. Instead, 6.5.8
+ships a **documented manual escalation + safe-handling path** owned by a named person, with
+grooming/CSAM never resting on the general LLM judge. Criminal law on CSAM (indecent images)
+applies regardless of OSA scope and is respected.
+
+**Two triggers re-open this decision** and pull the full regime forward — they must be
+satisfied *before* the feature reaches users:
+
+1. **Any user-to-user feature** (children sharing conversations, group/community) → become a
+   user-to-user service → CSEA reporting duty (NCA CSEA-IRP, no threshold) applies.
+2. **Media upload or AI image generation** → indecent-images criminal regime + IWF
+   hash-matching + NCA reporting.
+
+**Consequences.** Lighter compliance lift for the initial launch; 6.5.8 is a documented
+process, not a reporting integration. Risks: (a) the **parents-view-children's-conversations**
+feature is the one edge that must be confirmed against the user-to-user test — *flag for
+counsel, do not self-certify*; (b) this finding is **UK-only** — adding US users pulls in
+COPPA + NCMEC CyberTipline reporting, and EU users pull in the EU AI Act, both of which
+require re-assessment. Not legal advice; the scope determination must be lawyer-reviewed
+(tracked in 6.5.8's "now" Verify). Sources: Ofcom chatbot explainer; Ofcom CSEA reporting
+duty guidance; Crime and Policing Act 2026 (Royal Assent 29 Apr 2026); NCA CSEA-IRP; IWF.
