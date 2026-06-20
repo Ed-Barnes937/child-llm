@@ -31,3 +31,6 @@ jobs:
 
       - name: Format check
         run: pnpm format:check
+
+      - name: Adversarial guardrail eval (bypass-rate gate)
+        run: pnpm test:eval
