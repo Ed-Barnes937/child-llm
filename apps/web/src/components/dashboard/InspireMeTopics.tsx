@@ -67,6 +67,9 @@ const InspireMeTopics = ({
           onChange={(e) => setNewTopic(e.target.value)}
           onKeyDown={handleKeyDown}
           aria-label="New topic"
+          // Mirror the server-side limit so the 200-char validation (which
+          // returns a 400) is unreachable in normal use.
+          maxLength={200}
         />
         <Button
           type="button"

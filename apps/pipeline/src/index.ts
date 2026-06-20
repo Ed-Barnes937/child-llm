@@ -94,18 +94,40 @@ app.post("/chat", (c) => {
       calibrationAnswers: body.calibrationAnswers,
     };
 
-    // --- Step 1: Sensitive topic detection on the child's input ---
-    const sensitiveResult = detectSensitiveTopics(body.message);
+    // --- Step 1: Sensitive topic detection ---
+    // Check both the child's input and the last AI response — the child
+    // may follow up on a sensitive topic using innocuous phrasing while
+    // the AI's own reply introduced the sensitive terms.
+    const childSensitive = detectSensitiveTopics(body.message);
+    const lastAssistantMsg = body.history
+      ?.slice()
+      .reverse()
+      .find((m) => m.role === "assistant");
+    const responseSensitive = lastAssistantMsg
+      ? detectSensitiveTopics(lastAssistantMsg.content)
+      : null;
+    const isSensitive =
+      childSensitive.isSensitive || (responseSensitive?.isSensitive ?? false);
+    const sensitiveTopics = [
+      ...new Set([
+        ...childSensitive.topics,
+        ...(responseSensitive?.topics ?? []),
+      ]),
+    ];
+    const escalatedPrompt =
+      childSensitive.escalatedPrompt ??
+      responseSensitive?.escalatedPrompt ??
+      null;
 
     // --- Step 1b: Conversation depth check for sensitive topic follow-ups ---
-    if (sensitiveResult.isSensitive && body.history) {
+    if (isSensitive && body.history) {
       const depthResult = checkConversationDepth(body.history, body.message);
       if (depthResult.shouldRedirect && depthResult.redirectResponse) {
         const flagEvent = createFlagEvent(
           "sensitive",
           `Conversation depth limit reached (${depthResult.sensitiveCount} consecutive sensitive messages)`,
           body.message,
-          { topics: sensitiveResult.topics },
+          { topics: sensitiveTopics },
         );
         await sseStream.writeSSE({
           data: JSON.stringify({ flag: flagEvent }),
@@ -118,10 +140,9 @@ app.post("/chat", (c) => {
       }
     }
 
-    // Build system prompt, adding escalated constraint if sensitive
     let systemPrompt = buildSystemPrompt(promptConfig);
-    if (sensitiveResult.isSensitive && sensitiveResult.escalatedPrompt) {
-      systemPrompt += "\n\n" + sensitiveResult.escalatedPrompt;
+    if (isSensitive && escalatedPrompt) {
+      systemPrompt += "\n\n" + escalatedPrompt;
     }
 
     // --- Step 2: Build message list ---
@@ -193,7 +214,7 @@ app.post("/chat", (c) => {
         body.message,
         {
           aiResponse: fullResponse,
-          topics: sensitiveResult.topics,
+          topics: sensitiveTopics,
         },
       );
       await emitFlagAndFallback(sseStream, flagEvent);
@@ -201,14 +222,14 @@ app.post("/chat", (c) => {
     }
 
     // --- Step 7: If sensitive topic was detected, flag for parent (but still show the response) ---
-    if (sensitiveResult.isSensitive) {
+    if (isSensitive) {
       const flagEvent = createFlagEvent(
         "sensitive",
-        `Sensitive topic detected: ${sensitiveResult.topics.join(", ")}`,
+        `Sensitive topic detected: ${sensitiveTopics.join(", ")}`,
         body.message,
         {
           aiResponse: fullResponse,
-          topics: sensitiveResult.topics,
+          topics: sensitiveTopics,
         },
       );
       await sseStream.writeSSE({

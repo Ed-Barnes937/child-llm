@@ -4,6 +4,7 @@ import postgres from "postgres";
 import { children, devices } from "@child-safe-llm/db";
 import { eq } from "drizzle-orm";
 import type { PresetName } from "@child-safe-llm/shared";
+import { verifySecret } from "./password";
 
 const getDb = () => {
   const sql = postgres(process.env.DATABASE_URL!);
@@ -30,8 +31,7 @@ export const childLoginWithPassword = createServerFn({ method: "POST" })
       return { error: "Invalid username or password." };
     }
 
-    // TODO: proper password hashing comparison
-    if (child.passwordHash !== data.password) {
+    if (!verifySecret(data.password, child.passwordHash)) {
       return { error: "Invalid username or password." };
     }
 
@@ -80,8 +80,7 @@ export const childLoginWithPin = createServerFn({ method: "POST" })
       return { error: "Child not found." };
     }
 
-    // TODO: proper PIN hashing comparison
-    if (child.pinHash !== data.pin) {
+    if (!child.pinHash || !verifySecret(data.pin, child.pinHash)) {
       return { error: "Incorrect PIN." };
     }
 

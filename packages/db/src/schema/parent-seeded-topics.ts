@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { children } from "./children.js";
 
 export const parentSeededTopics = pgTable("parent_seeded_topics", {
@@ -6,7 +6,8 @@ export const parentSeededTopics = pgTable("parent_seeded_topics", {
   childId: uuid("child_id")
     .notNull()
     .references(() => children.id, { onDelete: "cascade" }),
-  topic: text("topic").notNull(),
+  // Length is also enforced server-side in handleCreateParentSeededTopic.
+  topic: varchar("topic", { length: 200 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

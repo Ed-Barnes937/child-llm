@@ -1,10 +1,5 @@
 import type { FlagDetail, UpdateFlagRequest } from "./types";
-
-const ensureOk = async (res: Response, context: string): Promise<void> => {
-  if (!res.ok) {
-    throw new Error(`${context} failed: ${res.status} ${res.statusText}`);
-  }
-};
+import { ensureOk } from "./fetch-utils";
 
 export const flagsApi = {
   getByParent: async (

@@ -4,6 +4,14 @@ primary_region = "lhr"
 [build]
   dockerfile = "apps/web/Dockerfile"
 
+[deploy]
+  # Apply the app's DB schema before each release. `db:push:ci` runs
+  # `drizzle-kit push --force`, which is non-interactive (auto-approves the
+  # generated statements) so it won't hang the release machine on a prompt.
+  # Requires the DATABASE_URL secret on this app:
+  #   fly secrets set DATABASE_URL=... -a child-safe-llm-web
+  release_command = "pnpm db:push:ci"
+
 [env]
   NODE_ENV = "production"
   PORT = "3000"

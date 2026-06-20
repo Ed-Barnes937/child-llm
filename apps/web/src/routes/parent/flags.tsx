@@ -18,10 +18,11 @@ const FlagsPage = () => {
 
   const parentId = session?.user?.id;
 
-  const { data: flags, isLoading: loadingFlags } = useFlagsByParent(
-    parentId,
-    selectedChildId,
-  );
+  const {
+    data: flags,
+    isLoading: loadingFlags,
+    isError: flagsError,
+  } = useFlagsByParent(parentId, selectedChildId);
   const { data: children } = useChildrenByParent(parentId);
   const markReviewed = useMarkFlagReviewed();
 
@@ -93,6 +94,12 @@ const FlagsPage = () => {
       <div className="mt-6 space-y-3">
         {loadingFlags ? (
           <p className="text-muted-foreground text-sm">Loading flags...</p>
+        ) : flagsError ? (
+          <div className="py-8 text-center">
+            <p className="text-destructive text-sm" data-testid="error-state">
+              Couldn&apos;t load flagged conversations. Please try again.
+            </p>
+          </div>
         ) : !flags || flags.length === 0 ? (
           <div className="py-8 text-center">
             <p className="text-muted-foreground" data-testid="empty-state">
