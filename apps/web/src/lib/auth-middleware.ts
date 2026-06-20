@@ -54,6 +54,15 @@ export const serverMiddleware = (): Plugin => {
         if (!req.url?.startsWith("/api/")) return next();
 
         try {
+          // Route dispatch is ordered, and the order matters. Requests are
+          // matched by top-to-bottom `startsWith` prefix checks; every matched
+          // block ends in `return`, so the FIRST matching block wins. Keep
+          // more-specific prefixes above more-general ones — e.g. `/api/auth`
+          // must precede the other `/api/...` blocks, and within a block the
+          // anchored sub-resource regexes (`/children/:id/config`,
+          // `/children/:id/topics/:topicId`, …) must precede the bare
+          // `/children/:id` and `/children` matchers. Reordering these can
+          // silently route a request to the wrong handler.
           // Better Auth middleware
           if (req.url?.startsWith("/api/auth")) {
             const { auth } = await server.ssrLoadModule("/src/lib/auth.ts");
@@ -215,6 +224,12 @@ export const serverMiddleware = (): Plugin => {
               if (!result) {
                 res.statusCode = 403;
                 res.end(JSON.stringify({ error: "Forbidden" }));
+                return;
+              }
+              if ("error" in result) {
+                res.statusCode = 400;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify(result));
                 return;
               }
               res.setHeader("Content-Type", "application/json");

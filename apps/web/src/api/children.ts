@@ -7,12 +7,7 @@ import type {
   ChildConfigResponse,
 } from "./types";
 import type { PresetSliders, CalibrationAnswer } from "@child-safe-llm/shared";
-
-const ensureOk = async (res: Response, context: string): Promise<void> => {
-  if (!res.ok) {
-    throw new Error(`${context} failed: ${res.status} ${res.statusText}`);
-  }
-};
+import { ensureOk } from "./fetch-utils";
 
 export const childrenApi = {
   create: async (data: CreateChildRequest): Promise<CreateChildResponse> => {
