@@ -81,9 +81,12 @@ test.describe("Parent settings page", () => {
     // Default state: checked
     await expect(flagSwitch).toHaveAttribute("aria-checked", "true");
 
-    // Click the switch via JS — Playwright CT considers small inline elements
-    // outside the viewport despite being rendered in the document.
-    await flagSwitch.evaluate((el: HTMLElement) => el.click());
+    // Toggle via the clickable <Label> rather than the tiny (32x18px) Base UI
+    // switch, which Playwright CT positions outside the viewport so neither a
+    // normal nor a forced click can land on it. The label is wired with its
+    // own onClick that flips the same preference, so it is the natural target.
+    const flagLabel = page.getByText("Flag notifications", { exact: true });
+    await flagLabel.click();
 
     // Verify localStorage was updated
     const stored = await page.evaluate(() =>
@@ -94,7 +97,7 @@ test.describe("Parent settings page", () => {
     expect(parsed.sessionLimitNotifications).toBe(true);
 
     // Toggle it back on
-    await flagSwitch.evaluate((el: HTMLElement) => el.click());
+    await flagLabel.click();
 
     const stored2 = await page.evaluate(() =>
       localStorage.getItem("app-settings-notifications"),

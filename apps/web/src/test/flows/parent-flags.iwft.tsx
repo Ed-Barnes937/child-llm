@@ -1,5 +1,6 @@
 import { test, expect } from "../fixtures.testHelper";
 import IwftApp from "../IwftApp";
+import { EndpointKey } from "../backend-simulator/Endpoint.testHelper";
 
 test.describe("Flagged Conversations Screen", () => {
   test("flags page shows all flags for parent", async ({
@@ -268,6 +269,220 @@ test.describe("Flagged Conversations Screen", () => {
     await expect(
       page.getByText("No flagged conversations found."),
     ).toBeVisible();
+  });
+
+  test("flag with no conversation renders without a link to the transcript", async ({
+    mount,
+    page,
+    backendSimulator,
+  }) => {
+    await backendSimulator.install(page);
+
+    const parent = backendSimulator.db.createParent({
+      name: "Alice",
+      email: "alice@test.com",
+      password: "pass",
+    });
+    const session = backendSimulator.db.createSession(parent.id);
+    await page.context().addCookies([
+      {
+        name: "better-auth.session_token",
+        value: session.token,
+        domain: "localhost",
+        path: "/",
+      },
+    ]);
+
+    const child = backendSimulator.db.createChild({
+      parentId: parent.id,
+      displayName: "Tommy",
+      presetName: "early-learner",
+      pin: "1234",
+    });
+
+    // A flag with no conversationId (e.g. a depth-limit redirect fired before
+    // any conversation was persisted) must still render, but not as a link.
+    backendSimulator.db.createFlag({
+      childId: child.id,
+      type: "sensitive",
+      reason: "Conversation depth limit reached",
+    });
+
+    await mount(<IwftApp initialPath="/parent/flags" />);
+
+    await expect(page.getByTestId("flag-item")).toHaveCount(1, {
+      timeout: 10000,
+    });
+
+    // The card renders, but is wrapped in a plain <div>, not a navigable <a>.
+    await expect(page.locator('a[data-testid="flag-link"]')).toHaveCount(0);
+    await expect(page.locator('div[data-testid="flag-link"]')).toHaveCount(1);
+  });
+
+  test("each flag type renders its own badge label and colour", async ({
+    mount,
+    page,
+    backendSimulator,
+  }) => {
+    await backendSimulator.install(page);
+
+    const parent = backendSimulator.db.createParent({
+      name: "Alice",
+      email: "alice@test.com",
+      password: "pass",
+    });
+    const session = backendSimulator.db.createSession(parent.id);
+    await page.context().addCookies([
+      {
+        name: "better-auth.session_token",
+        value: session.token,
+        domain: "localhost",
+        path: "/",
+      },
+    ]);
+
+    const child = backendSimulator.db.createChild({
+      parentId: parent.id,
+      displayName: "Tommy",
+      presetName: "early-learner",
+      pin: "1234",
+    });
+    const convo = backendSimulator.db.createConversation({
+      childId: child.id,
+      title: "About space",
+    });
+
+    backendSimulator.db.createFlag({
+      childId: child.id,
+      conversationId: convo.id,
+      type: "sensitive",
+      reason: "Sensitive topic detected",
+    });
+    backendSimulator.db.createFlag({
+      childId: child.id,
+      conversationId: convo.id,
+      type: "blocked",
+      reason: "Blocked content found",
+    });
+    backendSimulator.db.createFlag({
+      childId: child.id,
+      conversationId: convo.id,
+      type: "validation-failed",
+      reason: "Validation model flagged response",
+    });
+
+    await mount(<IwftApp initialPath="/parent/flags" />);
+
+    await expect(page.getByTestId("flag-item")).toHaveCount(3, {
+      timeout: 10000,
+    });
+
+    const badges = page.getByTestId("flag-type-badge");
+    await expect(badges.filter({ hasText: "Sensitive" })).toHaveClass(
+      /bg-yellow-100/,
+    );
+    await expect(badges.filter({ hasText: "Blocked" })).toHaveClass(
+      /bg-red-100/,
+    );
+    await expect(badges.filter({ hasText: "Validation Failed" })).toHaveClass(
+      /bg-orange-100/,
+    );
+  });
+
+  test("shows an error state when the flags request fails", async ({
+    mount,
+    page,
+    backendSimulator,
+  }) => {
+    await backendSimulator.install(page);
+
+    const parent = backendSimulator.db.createParent({
+      name: "Alice",
+      email: "alice@test.com",
+      password: "pass",
+    });
+    const session = backendSimulator.db.createSession(parent.id);
+    await page.context().addCookies([
+      {
+        name: "better-auth.session_token",
+        value: session.token,
+        domain: "localhost",
+        path: "/",
+      },
+    ]);
+
+    // Make the flags endpoint return a 500
+    backendSimulator.simulateEndpointError(EndpointKey.GET_FLAGS);
+
+    await mount(<IwftApp initialPath="/parent/flags" />);
+
+    await expect(page.getByTestId("error-state")).toBeVisible({
+      timeout: 10000,
+    });
+    // The error branch replaces the empty state, not augments it.
+    await expect(page.getByTestId("empty-state")).toHaveCount(0);
+  });
+
+  test("marking a flag reviewed updates state without leaving the flags page", async ({
+    mount,
+    page,
+    backendSimulator,
+  }) => {
+    await backendSimulator.install(page);
+
+    const parent = backendSimulator.db.createParent({
+      name: "Alice",
+      email: "alice@test.com",
+      password: "pass",
+    });
+    const session = backendSimulator.db.createSession(parent.id);
+    await page.context().addCookies([
+      {
+        name: "better-auth.session_token",
+        value: session.token,
+        domain: "localhost",
+        path: "/",
+      },
+    ]);
+
+    const child = backendSimulator.db.createChild({
+      parentId: parent.id,
+      displayName: "Tommy",
+      presetName: "early-learner",
+      pin: "1234",
+    });
+    const convo = backendSimulator.db.createConversation({
+      childId: child.id,
+      title: "About space",
+    });
+    backendSimulator.db.createFlag({
+      childId: child.id,
+      conversationId: convo.id,
+      type: "sensitive",
+      reason: "Sensitive topic detected",
+    });
+
+    await mount(<IwftApp initialPath="/parent/flags" />);
+
+    const reviewButton = page.getByTestId("mark-reviewed-button");
+    await expect(reviewButton).toBeEnabled({ timeout: 10000 });
+
+    // The button lives inside the conversation <Link>; clicking it must mark
+    // the flag reviewed without navigating to the conversation transcript.
+    await reviewButton.click();
+
+    await expect(
+      page.getByTestId("mark-reviewed-button").filter({ hasText: "Reviewed" }),
+    ).toBeVisible({ timeout: 10000 });
+
+    // The CT harness uses an in-memory router, so page.url() never reflects the
+    // route — assert we are still on the flags list (and not in the conversation
+    // transcript view) by its content instead.
+    await expect(
+      page.getByRole("heading", { name: "Flagged Conversations" }),
+    ).toBeVisible();
+    await expect(page.getByTestId("transcript-message")).toHaveCount(0);
+    await expect(page.getByTestId("back-button")).toHaveCount(0);
   });
 });
 

@@ -760,6 +760,8 @@ export const handleUpdateCalibration = async (
   });
 };
 
+const MAX_TOPIC_LENGTH = 200;
+
 export const handleGetParentSeededTopics = async (
   parentId: string,
   childId: string,
@@ -769,6 +771,9 @@ export const handleGetParentSeededTopics = async (
   const isOwner = await verifyChildOwnership(db, parentId, childId);
   if (!isOwner) return null;
 
+  // TODO: this fetches every row and reshapes them in JS. Fine at the current
+  // small scale, but if the per-child topic count grows, push column selection
+  // / pagination (and any aggregation) down to the DB query instead.
   const rows = await db
     .select()
     .from(parentSeededTopics)
@@ -793,9 +798,19 @@ export const handleCreateParentSeededTopic = async (
   const isOwner = await verifyChildOwnership(db, parentId, childId);
   if (!isOwner) return null;
 
+  const trimmed = typeof topic === "string" ? topic.trim() : "";
+  // Note: .length counts UTF-16 code units while varchar(200) counts characters.
+  // They only diverge for astral-plane chars, and JS over-counts, so anything
+  // passing this check is guaranteed to fit the column (no truncation risk).
+  if (trimmed.length === 0 || trimmed.length > MAX_TOPIC_LENGTH) {
+    return {
+      error: `Topic must be between 1 and ${MAX_TOPIC_LENGTH} characters.`,
+    };
+  }
+
   const [row] = await db
     .insert(parentSeededTopics)
-    .values({ childId, topic })
+    .values({ childId, topic: trimmed })
     .returning();
 
   return {
