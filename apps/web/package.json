@@ -13,6 +13,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:ct": "playwright test -c playwright-ct.config.ts",
     "test:ct:ui": "playwright test -c playwright-ct.config.ts --ui",
+    "test:unit": "vitest run",
     "db:auth:push": "drizzle-kit push --config drizzle-auth.config.ts"
   },
   "dependencies": {
@@ -47,6 +48,7 @@
     "@types/react-dom": "^19.2.3",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.4"
   }
 }

@@ -45,6 +45,12 @@ const generateUsername = (displayName: string): string => {
   return `${base}${suffix}`;
 };
 
+// Server-side backstop for the PIN format the onboarding UI enforces
+// (exactly 4 digits). Prevents an empty/garbage PIN reaching hashSecret and
+// being stored as a valid — but trivially guessable — credential.
+const isValidPin = (pin: unknown): pin is string =>
+  typeof pin === "string" && /^\d{4}$/.test(pin);
+
 export const handleCreateChild = async (data: {
   parentId: string;
   displayName: string;
@@ -53,6 +59,10 @@ export const handleCreateChild = async (data: {
   sliderOverrides?: Partial<PresetSliders>;
   calibrationAnswers?: CalibrationAnswer[];
 }) => {
+  if (!isValidPin(data.pin)) {
+    return { error: "PIN must be exactly 4 digits." };
+  }
+
   const db = getDb();
   const username = generateUsername(data.displayName);
   const tempPassword = username;
@@ -621,6 +631,10 @@ export const handleUpdateChild = async (
 
   const isOwner = await verifyChildOwnership(db, parentId, childId);
   if (!isOwner) return null;
+
+  if (data.pin !== undefined && !isValidPin(data.pin)) {
+    return { error: "PIN must be exactly 4 digits." };
+  }
 
   const updates: Record<string, unknown> = {};
   if (data.displayName !== undefined) updates.displayName = data.displayName;
