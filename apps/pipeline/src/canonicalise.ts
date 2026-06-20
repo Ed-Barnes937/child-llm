@@ -37,7 +37,9 @@ const EMOJI_WORDS: Record<string, string> = {
 };
 
 // Classic leetspeak digit/symbol → letter substitutions. Applied only to the
-// scan copy, after confusable folding, so "b0mb" reads as "bomb".
+// scan copy, after confusable folding, and only to characters adjacent to a
+// letter, so "b0mb" reads as "bomb" while standalone numbers ("I scored 100")
+// are left intact.
 const LEET: Record<string, string> = {
   "0": "o",
   "1": "i",
@@ -58,8 +60,13 @@ const demojize = (text: string): string => {
   return out;
 };
 
+// Only substitute a leet character that sits next to an ASCII letter, so it
+// disguises a word rather than appearing in ordinary numeric text.
 const deLeet = (text: string): string =>
-  text.replace(/[013457@$!]/g, (char) => LEET[char] ?? char);
+  text.replace(
+    /(?<=[a-z])[013457@$!]|[013457@$!](?=[a-z])/gi,
+    (char) => LEET[char] ?? char,
+  );
 
 export const canonicaliseForScan = (text: string): string => {
   const nfkc = text.normalize("NFKC");

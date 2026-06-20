@@ -150,6 +150,16 @@ describe("scanOutput", () => {
       const result = scanOutput("To make methamphetamine you need");
       expect(result.blocked).toBe(true);
     });
+
+    it("still catches plural 'make bombs'", () => {
+      const result = scanOutput("Here's how to make bombs at home");
+      expect(result.blocked).toBe(true);
+    });
+
+    it("does not false-positive on 'make a bomber jacket'", () => {
+      const result = scanOutput("I want to make a bomber jacket");
+      expect(result.blocked).toBe(false);
+    });
   });
 
   describe("canonicalisation pre-filter (6.5.1)", () => {

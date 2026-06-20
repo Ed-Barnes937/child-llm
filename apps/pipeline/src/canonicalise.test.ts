@@ -37,9 +37,16 @@ describe("canonicaliseForScan", () => {
   });
 
   describe("de-leeting", () => {
-    it("undoes classic leetspeak substitutions", () => {
+    it("undoes classic leetspeak substitutions adjacent to letters", () => {
       expect(canonicaliseForScan("b0mb")).toBe("bomb");
       expect(canonicaliseForScan("k!ll")).toBe("kill");
+    });
+
+    it("leaves standalone numbers and prices intact", () => {
+      expect(canonicaliseForScan("I scored 100 in maths")).toBe(
+        "I scored 100 in maths",
+      );
+      expect(canonicaliseForScan("$5 each")).toBe("$5 each");
     });
   });
 

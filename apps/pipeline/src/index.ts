@@ -22,6 +22,10 @@ import { checkConversationDepth } from "./depth-tracking.js";
 
 const app = new Hono();
 
+// Upper bound on a single child message. Generous for genuine chat, but caps
+// the cost of the synchronous blocklist scan on attacker-controlled input.
+const MAX_MESSAGE_LENGTH = 4000;
+
 const resolvePipelineApiKey = (): string => {
   const key = process.env.PIPELINE_API_KEY;
   if (key) return key;
@@ -77,6 +81,19 @@ app.post("/chat", (c) => {
     try {
       body = await c.req.json();
     } catch {
+      await sseStream.writeSSE({
+        data: JSON.stringify({ error: "Invalid request" }),
+      });
+      return;
+    }
+
+    // Reject over-long or non-string input before the synchronous blocklist
+    // scan below — the matcher is linear in input length, so an uncapped
+    // message would stall the event loop.
+    if (
+      typeof body.message !== "string" ||
+      body.message.length > MAX_MESSAGE_LENGTH
+    ) {
       await sseStream.writeSSE({
         data: JSON.stringify({ error: "Invalid request" }),
       });
