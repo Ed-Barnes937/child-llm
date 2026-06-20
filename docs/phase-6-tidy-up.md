@@ -2,6 +2,17 @@
 
 Items not addressed during the per-slice fix passes. To be resolved in a single tidy-up PR after all slices are merged.
 
+> **Status (2026-06-20):** Largely resolved by **PR #19** (Phase 6 finish, bundling #16/#17/#18).
+>
+> - ✅ **#1** shared `ensureOk` → `src/api/fetch-utils.ts`
+> - ✅ **#2** topic length constraint (`varchar(200)` + server validation + input `maxLength`)
+> - ✅ **#3** auth-middleware route-ordering comment
+> - ⬜ **#4** consolidate flag routes — **still open** (not addressed in PR #19)
+> - ✅ **#5** topic-aggregation DB TODO
+> - ✅ **#6** parent-flags test gaps (+ error-state branch)
+> - ✅ **#7** PIN plaintext → scrypt hashing (#17). *Follow-up: child default password is its username — tracked as Phase 6.5.11.*
+> - ✅ **#8** replaced `evaluate(el => el.click())` with a native click
+
 ---
 
 ## 1. Extract shared `ensureOk` helper
