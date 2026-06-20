@@ -277,6 +277,9 @@ export const serverMiddleware = (): Plugin => {
                 res.end(JSON.stringify({ error: "Forbidden" }));
                 return;
               }
+              if ("error" in result) {
+                res.statusCode = 400;
+              }
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify(result));
               return;
@@ -287,6 +290,9 @@ export const serverMiddleware = (): Plugin => {
             if (req.method === "POST") {
               const data = JSON.parse(body);
               const result = await handlers.handleCreateChild(data);
+              if ("error" in result) {
+                res.statusCode = 400;
+              }
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify(result));
               return;

@@ -9,6 +9,9 @@ const SALT_BYTES = 16;
  * in the existing `text` password/PIN columns.
  */
 export const hashSecret = (plain: string): string => {
+  if (typeof plain !== "string") {
+    throw new TypeError("hashSecret: secret must be a string");
+  }
   const salt = randomBytes(SALT_BYTES).toString("hex");
   const hash = scryptSync(plain, salt, KEY_LENGTH).toString("hex");
   return `${salt}:${hash}`;
@@ -20,6 +23,10 @@ export const hashSecret = (plain: string): string => {
  * value (e.g. legacy plaintext rows from before hashing was introduced).
  */
 export const verifySecret = (plain: string, stored: string): boolean => {
+  // Guard non-string input (e.g. a JSON body sending a number/undefined for the
+  // PIN) — scryptSync throws on non-string/Buffer, which would otherwise surface
+  // as a 500 on an unauthenticated login endpoint instead of a clean failure.
+  if (typeof plain !== "string" || typeof stored !== "string") return false;
   const [salt, hash] = stored.split(":");
   if (!salt || !hash) return false;
   const expected = Buffer.from(hash, "hex");
