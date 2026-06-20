@@ -9,6 +9,7 @@ import {
   type PresetSliders,
   type CalibrationAnswer,
 } from "@child-safe-llm/shared";
+import { hashSecret } from "./password";
 
 const generateUsername = (displayName: string): string => {
   const base = displayName
@@ -49,8 +50,8 @@ export const createChild = createServerFn({ method: "POST" })
         parentId: data.parentId,
         displayName: data.displayName,
         username,
-        passwordHash: tempPassword, // TODO: hash properly
-        pinHash: data.pin, // TODO: hash properly
+        passwordHash: hashSecret(tempPassword),
+        pinHash: hashSecret(data.pin),
         presetName: data.presetName,
       })
       .returning();

@@ -11,6 +11,7 @@ import {
   parentSeededTopics,
 } from "@child-safe-llm/db";
 import { eq, desc, inArray, count } from "drizzle-orm";
+import { hashSecret, verifySecret } from "./password";
 import {
   PRESET_DEFINITIONS,
   type PresetName,
@@ -44,6 +45,12 @@ const generateUsername = (displayName: string): string => {
   return `${base}${suffix}`;
 };
 
+// Server-side backstop for the PIN format the onboarding UI enforces
+// (exactly 4 digits). Prevents an empty/garbage PIN reaching hashSecret and
+// being stored as a valid — but trivially guessable — credential.
+const isValidPin = (pin: unknown): pin is string =>
+  typeof pin === "string" && /^\d{4}$/.test(pin);
+
 export const handleCreateChild = async (data: {
   parentId: string;
   displayName: string;
@@ -52,6 +59,10 @@ export const handleCreateChild = async (data: {
   sliderOverrides?: Partial<PresetSliders>;
   calibrationAnswers?: CalibrationAnswer[];
 }) => {
+  if (!isValidPin(data.pin)) {
+    return { error: "PIN must be exactly 4 digits." };
+  }
+
   const db = getDb();
   const username = generateUsername(data.displayName);
   const tempPassword = username;
@@ -62,8 +73,8 @@ export const handleCreateChild = async (data: {
       parentId: data.parentId,
       displayName: data.displayName,
       username,
-      passwordHash: tempPassword,
-      pinHash: data.pin,
+      passwordHash: hashSecret(tempPassword),
+      pinHash: hashSecret(data.pin),
       presetName: data.presetName,
     })
     .returning();
@@ -118,7 +129,7 @@ export const handleChildLoginWithPassword = async (data: {
     .limit(1);
 
   if (!child) return { error: "Invalid username or password." };
-  if (child.passwordHash !== data.password)
+  if (!verifySecret(data.password, child.passwordHash))
     return { error: "Invalid username or password." };
 
   const [existingDevice] = await db
@@ -158,7 +169,8 @@ export const handleChildLoginWithPin = async (data: {
     .limit(1);
 
   if (!child) return { error: "Child not found." };
-  if (child.pinHash !== data.pin) return { error: "Incorrect PIN." };
+  if (!child.pinHash || !verifySecret(data.pin, child.pinHash))
+    return { error: "Incorrect PIN." };
 
   return {
     child: {
@@ -620,10 +632,14 @@ export const handleUpdateChild = async (
   const isOwner = await verifyChildOwnership(db, parentId, childId);
   if (!isOwner) return null;
 
+  if (data.pin !== undefined && !isValidPin(data.pin)) {
+    return { error: "PIN must be exactly 4 digits." };
+  }
+
   const updates: Record<string, unknown> = {};
   if (data.displayName !== undefined) updates.displayName = data.displayName;
   if (data.presetName !== undefined) updates.presetName = data.presetName;
-  if (data.pin !== undefined) updates.pinHash = data.pin;
+  if (data.pin !== undefined) updates.pinHash = hashSecret(data.pin);
 
   if (Object.keys(updates).length === 0) {
     const [child] = await db
