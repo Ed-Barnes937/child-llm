@@ -122,6 +122,28 @@ The parent's view into their children's activity.
 
 ---
 
+## Phase 6.5: Guardrail Hardening
+Make the safety product *solid before billing*. Full gap analysis, rationale, and verify-criteria in [`phase-6.5-guardrail-hardening.md`](phase-6.5-guardrail-hardening.md). **Gate: Tier P0 + P1 below complete before Phase 7 starts.**
+
+Tier P0 — close the cheapest bypasses
+- [ ] **6.5.1** Canonicalisation pre-filter (input + output, scan-copy only) — fold homoglyphs, strip zero-width chars, de-leet ahead of the blocklist
+- [ ] **6.5.2** Second + third opinion classifiers — purpose-built safety classifier (Llama Guard / ShieldGemma) + non-LLM (fastText) as parallel votes; disagreement → unsafe. *(Pulled forward from 10.1.)*
+- [ ] **6.5.3** Adversarial eval harness — version-controlled trick set (story framing, apology, emoji, crescendo), bypass rate tracked in CI. *(Formalises the red-team intent of 10.1.)*
+
+Tier P1 — close the structural gaps
+- [x] **6.5.4** Scan the AI *response* for sensitive topics, not just input — ✅ shipped in PR #19 (#16)
+- [ ] **6.5.5** Whole-conversation (crescendo) check — evaluate the running conversation each turn
+- [ ] **6.5.6** Behavioural signals + rate limiting. *(Pulled forward from 9.5, broadened beyond PIN brute-force.)*
+- [ ] **6.5.7** Prompt-injection shield on input
+- [ ] **6.5.8** Grooming/CSAM escalation path + human-in-the-loop — mandatory; never the general judge. Needs legal groundwork.
+
+Tier P2 — turn control into real control
+- [ ] **6.5.9** Safe-by-default presets + honest disclosure + parent-visible flag log
+- [x] **6.5.10** Hash child PIN/password (stop storing plaintext) — ✅ shipped in PR #19 (#17, scrypt via `node:crypto`)
+- [ ] **6.5.11** Force child password change on first login — default password is the username (weak default surfaced by PR #19)
+
+---
+
 ## Phase 7: Billing & Account Management
 Subscription, trials, and account admin.
 
@@ -155,7 +177,7 @@ Get it ready for real users.
 - [ ] **9.2** WCAG AA audit — check all screens against accessibility standards, fix issues
 - [ ] **9.3** Responsive design pass — ensure all screens work on mobile, tablet, and desktop
 - [ ] **9.4** Loading states, empty states, and error states across all screens
-- [ ] **9.5** Rate limiting and brute-force protection on PIN/password entry
+- [ ] **9.5** Rate limiting and brute-force protection on PIN/password entry — *core rate-limiting pulled forward to Phase 6.5.6; this remains the PIN/password-specific brute-force hardening*
 - [ ] **9.6** Encryption at rest confirmation — verify Fly.io Postgres encryption, TLS on all connections
 - [ ] **9.7** Privacy policy and terms of service pages
 - [ ] **9.8** Full regression pass — run all Playwright tests from earlier phases, fix regressions
@@ -166,7 +188,7 @@ Get it ready for real users.
 ## Phase 10: Pre-Launch
 Final steps before real users.
 
-- [ ] **10.1** Red team the guardrails — attempt prompt injection, edge cases, inappropriate queries across all preset levels. Evaluate adding LlamaGuard 4 via OpenRouter ($0.18/M tokens) as a purpose-built safety classifier — it has 14 categories including child exploitation (S4), and runs on the same OpenRouter infra we already use
+- [ ] **10.1** Red team the guardrails — attempt prompt injection, edge cases, inappropriate queries across all preset levels. *(The classifier decision and the repeatable eval harness moved to Phase 6.5.2 / 6.5.3 — LlamaGuard is now a decided P0, not a "maybe". This item is now a final pre-launch regression run using the 6.5.3 harness.)*
 - [ ] **10.2** Content finalisation — all calibration questions, preset definitions, system prompts, "Inspire me" pool, intent categories reviewed and polished
 - [ ] **10.3** Custom design theme pass — replace Shadcn defaults with the product's visual identity
 - [ ] **10.4** User validation — show to 5-10 parents, gather feedback, iterate
