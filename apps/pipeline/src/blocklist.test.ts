@@ -152,6 +152,31 @@ describe("scanOutput", () => {
     });
   });
 
+  describe("canonicalisation pre-filter (6.5.1)", () => {
+    it("catches homoglyph-obfuscated dangerous content", () => {
+      // Cyrillic о (U+043E) — breaks the raw regex, folded on the scan copy.
+      const result = scanOutput("how to make a bоmb");
+      expect(result.blocked).toBe(true);
+      expect(result.matches.some((m) => m.category === "dangerous")).toBe(true);
+    });
+
+    it("catches zero-width-split profanity", () => {
+      const result = scanOutput(`what a piece of sh${"\u200B"}it`);
+      expect(result.blocked).toBe(true);
+      expect(result.matches.some((m) => m.category === "profanity")).toBe(true);
+    });
+
+    it("catches emoji-substituted dangerous content", () => {
+      const result = scanOutput("here's how to make a 💣 at home");
+      expect(result.blocked).toBe(true);
+    });
+
+    it("still catches phone numbers (contact-info uses the raw text)", () => {
+      const result = scanOutput("Call me on 07911 123456");
+      expect(result.blocked).toBe(true);
+    });
+  });
+
   describe("result structure", () => {
     it("returns all matching categories", () => {
       const result = scanOutput("fuck, visit http://evil.com");

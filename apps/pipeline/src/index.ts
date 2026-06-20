@@ -94,6 +94,25 @@ app.post("/chat", (c) => {
       calibrationAnswers: body.calibrationAnswers,
     };
 
+    // --- Step 0: Input blocklist (canonicalised) ---
+    // Mirror the output blocklist onto the child's input (Q2) so blatant junk —
+    // profanity, weapon/drug requests, contact-info — never reaches generation.
+    // scanOutput canonicalises a scan copy first (6.5.1), defeating homoglyph,
+    // zero-width and emoji evasions on the input path too.
+    const inputBlock = scanOutput(body.message);
+    if (inputBlock.blocked) {
+      const categories = [
+        ...new Set(inputBlock.matches.map((m) => m.category)),
+      ].join(", ");
+      const flagEvent = createFlagEvent(
+        "blocked",
+        `Input blocklist triggered: ${categories}`,
+        body.message,
+      );
+      await emitFlagAndFallback(sseStream, flagEvent);
+      return;
+    }
+
     // --- Step 1: Sensitive topic detection ---
     // Check both the child's input and the last AI response — the child
     // may follow up on a sensitive topic using innocuous phrasing while

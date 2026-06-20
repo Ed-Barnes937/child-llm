@@ -44,6 +44,9 @@ importers:
       '@hono/node-server':
         specifier: ^1.19.13
         version: 1.19.13(hono@4.12.12)
+      confusables:
+        specifier: ^1.1.1
+        version: 1.1.1
       hono:
         specifier: ^4.12.12
         version: 4.12.12
@@ -2064,6 +2067,10 @@ packages:
   commander@14.0.3:
     resolution: {integrity: sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw==}
     engines: {node: '>=20'}
+
+  confusables@1.1.1:
+    resolution: {integrity: sha512-BzFtzUrufackm00Wb2zvrZV0ItRqPdWaUprU5FXHeZiJRrOWxGmXmQl/muGTF9EQl+MdBXz+Irk99meskGZmXw==}
+    engines: {node: '>=10', npm: '>=6'}
 
   content-disposition@1.1.0:
     resolution: {integrity: sha512-5jRCH9Z/+DRP7rkvY83B+yGIGX96OYdJmzngqnw2SBSxqCFPd0w2km3s5iawpGX8krnwSGmF0FW5Nhr0Hfai3g==}
@@ -5617,6 +5624,8 @@ snapshots:
   commander@11.1.0: {}
 
   commander@14.0.3: {}
+
+  confusables@1.1.1: {}
 
   content-disposition@1.1.0: {}
 
