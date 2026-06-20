@@ -16,6 +16,7 @@
     "format:check": "prettier --check .",
     "typecheck": "pnpm -r typecheck",
     "test:e2e": "pnpm --filter @child-safe-llm/web test:e2e",
+    "test:eval": "pnpm --filter @child-safe-llm/pipeline test:eval",
     "db:generate": "pnpm --filter @child-safe-llm/db generate",
     "db:migrate": "pnpm --filter @child-safe-llm/db migrate",
     "db:push": "pnpm --filter @child-safe-llm/db push",

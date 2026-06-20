@@ -10,7 +10,8 @@
     "lint": "echo 'pipeline lint placeholder'",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:eval": "vitest run src/eval"
   },
   "dependencies": {
     "@child-safe-llm/shared": "workspace:*",
