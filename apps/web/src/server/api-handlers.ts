@@ -799,6 +799,9 @@ export const handleCreateParentSeededTopic = async (
   if (!isOwner) return null;
 
   const trimmed = typeof topic === "string" ? topic.trim() : "";
+  // Note: .length counts UTF-16 code units while varchar(200) counts characters.
+  // They only diverge for astral-plane chars, and JS over-counts, so anything
+  // passing this check is guaranteed to fit the column (no truncation risk).
   if (trimmed.length === 0 || trimmed.length > MAX_TOPIC_LENGTH) {
     return {
       error: `Topic must be between 1 and ${MAX_TOPIC_LENGTH} characters.`,
