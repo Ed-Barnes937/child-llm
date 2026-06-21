@@ -21,7 +21,7 @@ const seedParentAndChild = (db: BackendSimulatorDb) => {
 };
 
 test.describe("Child login", () => {
-  test("child can log in with username + password on new device", async ({
+  test("default-credential child must set a new password before reaching a session", async ({
     mount,
     page,
     backendSimulator,
@@ -37,11 +37,27 @@ test.describe("Child login", () => {
     // New device = no device token = shows username/password form
     await expect(component.getByLabel("Username")).toBeVisible();
     await component.getByLabel("Username").fill(child.username);
+    // Default password is the username (6.5.11).
     await component.getByLabel("Password").fill(child.username);
     await component.getByRole("button", { name: "Log in" }).click();
 
-    // Should navigate to child home
+    // Logging in with the default credential does NOT reach the home screen —
+    // the child is forced to set a new password first.
+    await expect(page.getByText("Set a new password")).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByText("Hi, Alex!")).not.toBeVisible();
+
+    // Set a new password and continue.
+    await component.getByLabel("New password").fill("rainbow42");
+    await component.getByLabel("Confirm password").fill("rainbow42");
+    await component.getByRole("button", { name: "Save and continue" }).click();
+
+    // Now the session completes and the child lands on home.
     await expect(page.getByText("Hi, Alex!")).toBeVisible({ timeout: 10000 });
+    // The default credential no longer works.
+    expect(child.mustChangePassword).toBe(false);
+    expect(child.passwordHash).toBe("rainbow42");
   });
 
   test("child can log in with PIN on known device", async ({
@@ -50,7 +66,9 @@ test.describe("Child login", () => {
     backendSimulator,
   }) => {
     // Seed data first (before mount, so we know the child details)
-    const { parent } = seedParentAndChild(backendSimulator.db);
+    const { parent, child } = seedParentAndChild(backendSimulator.db);
+    // This child has already set a real password, so PIN login is unblocked.
+    backendSimulator.db.markPasswordChanged(child.id);
 
     // Set up device token in localStorage BEFORE mount
     const deviceToken = "test-device-token-123";
@@ -78,6 +96,42 @@ test.describe("Child login", () => {
     // Should navigate to child home
     await expect(page.getByText("Hi, Alex!")).toBeVisible();
     await expect(page.getByText("Start a new conversation")).toBeVisible();
+  });
+
+  test("default-credential child reached via PIN on a known device must also set a new password", async ({
+    mount,
+    page,
+    backendSimulator,
+  }) => {
+    // A brand-new child whose parent already uses this device: it shows in the
+    // profile list and can be reached by PIN, but still has the default password.
+    const { parent, child } = seedParentAndChild(backendSimulator.db);
+
+    const deviceToken = "test-device-token-456";
+    await page.evaluate((token) => {
+      localStorage.setItem("child-safe-llm-device-token", token);
+    }, deviceToken);
+    backendSimulator.db.registerDevice(parent.id, deviceToken);
+
+    await backendSimulator.install(page);
+    const component = await mount(<IwftApp initialPath="/child/login" />);
+
+    await expect(page.getByText("Alex")).toBeVisible({ timeout: 10000 });
+    await page.getByText("Alex").click();
+    await page.getByPlaceholder("****").fill("5678");
+    await page.getByRole("button", { name: "Go" }).click();
+
+    // PIN login of a default-credential child still forces the password change.
+    await expect(page.getByText("Set a new password")).toBeVisible({
+      timeout: 10000,
+    });
+
+    await component.getByLabel("New password").fill("sunflower7");
+    await component.getByLabel("Confirm password").fill("sunflower7");
+    await component.getByRole("button", { name: "Save and continue" }).click();
+
+    await expect(page.getByText("Hi, Alex!")).toBeVisible({ timeout: 10000 });
+    expect(child.mustChangePassword).toBe(false);
   });
 });
 

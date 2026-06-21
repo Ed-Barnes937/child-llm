@@ -218,6 +218,7 @@ export const createChildAuthRoutes = (
               username: child.username,
               presetName: child.presetName,
               parentId: child.parentId,
+              mustChangePassword: child.mustChangePassword,
             },
           });
         },
@@ -242,6 +243,38 @@ export const createChildAuthRoutes = (
               username: child.username,
               presetName: child.presetName,
               parentId: child.parentId,
+              mustChangePassword: child.mustChangePassword,
+            },
+          });
+        },
+      ),
+  ),
+
+  post(
+    "/child-auth/change-password",
+    (
+      req: HttpRequest<{
+        childId: string;
+        newPassword: string;
+        password?: string;
+        pin?: string;
+      }>,
+    ) =>
+      handleEndpointBehaviour(
+        db.endpointBehaviourManager.getBehaviour(
+          EndpointKey.CHILD_CHANGE_PASSWORD,
+        ),
+        () => {
+          const result = db.changeChildPassword(req.body);
+          if ("error" in result) return json(result, 400);
+          return json({
+            child: {
+              id: result.id,
+              displayName: result.displayName,
+              username: result.username,
+              presetName: result.presetName,
+              parentId: result.parentId,
+              mustChangePassword: result.mustChangePassword,
             },
           });
         },

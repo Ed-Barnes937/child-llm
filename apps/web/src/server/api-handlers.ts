@@ -158,6 +158,7 @@ export const handleChildLoginWithPassword = async (data: {
       username: child.username,
       presetName: child.presetName as PresetName,
       parentId: child.parentId,
+      mustChangePassword: child.mustChangePassword,
     },
   };
 };
@@ -200,6 +201,71 @@ export const handleChildLoginWithPin = async (data: {
       username: child.username,
       presetName: child.presetName as PresetName,
       parentId: child.parentId,
+      mustChangePassword: child.mustChangePassword,
+    },
+  };
+};
+
+// Minimum length for a child-chosen password. The only credential before this
+// point is the username (the temp default), so any real password is an
+// improvement; this just stops a trivially short one.
+const MIN_PASSWORD_LENGTH = 6;
+
+// Forces the first-login password change required by 6.5.11. Identity is proven
+// with the credential the child just authenticated with (their temp password or
+// their PIN) — there is no child session token in this architecture. The change
+// is only allowed while `mustChangePassword` is set, so this endpoint cannot be
+// used to overwrite an established child's password.
+export const handleChangeChildPassword = async (data: {
+  childId: string;
+  newPassword: string;
+  password?: string;
+  pin?: string;
+}) => {
+  const db = getDb();
+  const [child] = await db
+    .select()
+    .from(children)
+    .where(eq(children.id, data.childId))
+    .limit(1);
+
+  if (!child) return { error: "Child not found." };
+  if (!child.mustChangePassword)
+    return { error: "Password has already been set." };
+
+  const proven =
+    verifySecret(data.password ?? "", child.passwordHash) ||
+    (child.pinHash !== null && verifySecret(data.pin ?? "", child.pinHash));
+  if (!proven) return { error: "We couldn't verify it was you. Try again." };
+
+  if (
+    typeof data.newPassword !== "string" ||
+    data.newPassword.length < MIN_PASSWORD_LENGTH
+  ) {
+    return {
+      error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
+    };
+  }
+  if (data.newPassword === child.username) {
+    return { error: "Pick a password that isn't your username." };
+  }
+
+  await db
+    .update(children)
+    .set({
+      passwordHash: hashSecret(data.newPassword),
+      mustChangePassword: false,
+    })
+    .where(eq(children.id, child.id));
+
+  return {
+    child: {
+      id: child.id,
+      displayName: child.displayName,
+      username: child.username,
+      presetName: child.presetName as PresetName,
+      parentId: child.parentId,
+      mustChangePassword: false,
     },
   };
 };

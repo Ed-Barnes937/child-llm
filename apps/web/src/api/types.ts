@@ -38,6 +38,15 @@ export interface ChildLoginPinRequest {
   deviceToken: string;
 }
 
+// One of `password` / `pin` proves identity (the credential the child just used
+// to log in). 6.5.11.
+export interface ChildChangePasswordRequest {
+  childId: string;
+  newPassword: string;
+  password?: string;
+  pin?: string;
+}
+
 export interface ChildLoginResponse {
   child?: {
     id: string;
@@ -45,6 +54,7 @@ export interface ChildLoginResponse {
     username: string;
     presetName: PresetName;
     parentId: string;
+    mustChangePassword: boolean;
   };
   error?: string;
 }
