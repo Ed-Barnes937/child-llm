@@ -239,6 +239,12 @@ EU AI Act. Both require a fresh assessment.
 verification requires the scope determination to be *lawyer-reviewed*, and the named-owner
 placeholders in [§2](#2-the-named-owner) to be filled.
 
+**The gate is on *release*, not on merging this document.** This runbook may land on `main`
+as work-in-progress so development continues, but the product **must not launch to real
+users** until counsel has signed off. The blockers below are tracked durably in
+[`docs/launch-readiness.md`](../launch-readiness.md) — that list is what a release checks
+against.
+
 **Pre-launch checklist (all required):**
 
 - [ ] Counsel has reviewed **ADR-0007** (the OSA scope determination) and this runbook.
@@ -249,6 +255,6 @@ placeholders in [§2](#2-the-named-owner) to be filled.
 - [ ] The **flag-review cadence** in [§3](#3-how-a-signal-reaches-the-dsl) is set.
 - [ ] The secure **incident log** location and access controls in [§6](#6-safe-handling-of-content--record-keeping) exist.
 
-> **This document must not be self-certified or self-merged.** The PR that introduces it
-> requires **human legal review** before merge. An agent must not mark the counsel items above
-> as complete.
+> **An agent must not mark the counsel items above as complete, and must not certify the
+> legal posture.** Those require a human lawyer. ADR-0009 stays **Proposed** until they are
+> done.
