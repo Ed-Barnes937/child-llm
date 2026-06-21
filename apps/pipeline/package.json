@@ -16,6 +16,7 @@
   "dependencies": {
     "@child-safe-llm/shared": "workspace:*",
     "@hono/node-server": "^1.19.13",
+    "confusables": "^1.1.1",
     "hono": "^4.12.12",
     "libphonenumber-js": "^1.12.41",
     "obscenity": "^0.4.6",

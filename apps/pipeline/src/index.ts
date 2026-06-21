@@ -22,6 +22,10 @@ import { checkConversationDepth } from "./depth-tracking.js";
 
 const app = new Hono();
 
+// Upper bound on a single child message. Generous for genuine chat, but caps
+// the cost of the synchronous blocklist scan on attacker-controlled input.
+const MAX_MESSAGE_LENGTH = 4000;
+
 const resolvePipelineApiKey = (): string => {
   const key = process.env.PIPELINE_API_KEY;
   if (key) return key;
@@ -83,6 +87,19 @@ app.post("/chat", (c) => {
       return;
     }
 
+    // Reject over-long or non-string input before the synchronous blocklist
+    // scan below — the matcher is linear in input length, so an uncapped
+    // message would stall the event loop.
+    if (
+      typeof body.message !== "string" ||
+      body.message.length > MAX_MESSAGE_LENGTH
+    ) {
+      await sseStream.writeSSE({
+        data: JSON.stringify({ error: "Invalid request" }),
+      });
+      return;
+    }
+
     const sliders =
       body.sliders ??
       PRESET_DEFINITIONS[body.presetName]?.sliders ??
@@ -93,6 +110,25 @@ app.post("/chat", (c) => {
       sliders,
       calibrationAnswers: body.calibrationAnswers,
     };
+
+    // --- Step 0: Input blocklist (canonicalised) ---
+    // Mirror the output blocklist onto the child's input (Q2) so blatant junk —
+    // profanity, weapon/drug requests, contact-info — never reaches generation.
+    // scanOutput canonicalises a scan copy first (6.5.1), defeating homoglyph,
+    // zero-width and emoji evasions on the input path too.
+    const inputBlock = scanOutput(body.message);
+    if (inputBlock.blocked) {
+      const categories = [
+        ...new Set(inputBlock.matches.map((m) => m.category)),
+      ].join(", ");
+      const flagEvent = createFlagEvent(
+        "blocked",
+        `Input blocklist triggered: ${categories}`,
+        body.message,
+      );
+      await emitFlagAndFallback(sseStream, flagEvent);
+      return;
+    }
 
     // --- Step 1: Sensitive topic detection ---
     // Check both the child's input and the last AI response — the child
