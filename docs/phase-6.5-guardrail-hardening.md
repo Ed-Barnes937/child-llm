@@ -46,6 +46,7 @@ Layer codes (Q* = query path, R* = response path) refer to the pipeline-layers r
 | Safe-by-default presets + honest disclosure + parent visibility | parental | P2 | Partial across Phase 2 / Phase 6 |
 | Hash PINs (stop storing plaintext) | — | security | ✅ **Shipped in PR #19 (#17, scrypt)** |
 | Force password change on first login (default password = username) | — | security | New — surfaced by PR #19 |
+| Enforce UK-only access (back the ADR-0007 legal basis) | edge / signup | **launch-blocker** | New — surfaced 2026-06-21 (ADR-0008) |
 
 **The pattern:** four of the gaps are genuinely net-new, three are scheduled too late
 (10.1, 9.5), and two — the AI-response topic scan and the plaintext-PIN debt — are
@@ -104,6 +105,8 @@ none mean abandoning the current setup. Each item states its success check.
     PIN brute-force.
   - **Verify:** repeated rapid probing is throttled/flagged; thresholds tuned against real
     traffic, not a paper figure (this layer is medium-confidence — see the reference).
+  - The shipped defaults are placeholders; the tuning process against real traffic is
+    documented in [`phase-6.5.6-rate-limit-tuning.md`](phase-6.5.6-rate-limit-tuning.md).
 
 - [ ] **6.5.7** Prompt-injection shield on input
   - A dedicated detector at the input stage for "ignore your instructions and…" style
@@ -112,7 +115,7 @@ none mean abandoning the current setup. Each item states its success check.
 
 - [x] **6.5.8** Grooming / CSAM escalation path + human-in-the-loop — *mandatory*
       *(NOW-tier docs drafted — see [`safeguarding/csam-grooming-escalation.md`](safeguarding/csam-grooming-escalation.md)
-      and ADR-0008; **counsel sign-off still required before this is live**.)*
+      and ADR-0009; **counsel sign-off still required before this is live**.)*
   - This category must **never** rest on the general judge. Route to dedicated detection,
     a clear reporting process, and a person in the loop.
   - **UK scope finding (2026-06-20, see ADR-0007).** A one-to-one, text-only child↔AI chat
@@ -131,6 +134,20 @@ none mean abandoning the current setup. Each item states its success check.
   - **Verify (gated — the day sharing OR media upload ships):** NCA CSEA-IRP reporting
     integration + IWF hash-list matching are in place *before* that feature reaches users;
     re-run the scope determination.
+
+- [ ] **6.5.12** Enforce UK-only access — *launch-blocker, pairs with 6.5.8* (see ADR-0008)
+  - This is the control that makes ADR-0007's "UK-exclusive" premise **true rather than
+    aspirational.** It does *not* affect the OSA user-to-user finding (that rests on the
+    service's architecture, not geography); it keeps the **compliance surface limited to the
+    UK** so that COPPA + NCMEC (US) and the EU AI Act (EU) stay out of scope. Without it, the
+    legal posture rests on a boundary we don't actually enforce.
+  - Enforce as **reasonable measures** (the standard is reasonable, not perfect — VPNs always
+    leak): (1) **edge geo-IP block** (Fly.io / Cloudflare) refusing non-UK requests; (2)
+    **country at parent registration**, UK-only, with ToS restricting use to the UK; (3)
+    *later, with Phase 7* — **UK billing address** as a third confirmation once payments exist.
+  - **Verify:** a non-UK IP cannot complete registration or reach the chat; the UK-only
+    restriction is stated in the ToS; the measure is documented as the enforcement basis for
+    ADR-0007. *Lawyer-reviewed alongside 6.5.8.*
 
 ### Tier P2 — turn control into real control
 
@@ -171,6 +188,11 @@ none mean abandoning the current setup. Each item states its success check.
 Billing (Phase 7) is the line in the sand. **Phase 6.5 Tier P0 and Tier P1 should be
 complete before Phase 7 starts.** Tier P2 (safe defaults, disclosure) is strongly
 recommended in the same window but is product/design work rather than a hard blocker.
+
+**Two items are hard launch-blockers regardless of tier**, because the legal posture rests
+on them: **6.5.8** (CSAM escalation path) and **6.5.12** (UK-only access enforcement). Both
+must be in place and lawyer-reviewed before any real user — paying or not — reaches the
+product.
 
 The one-line rationale: a paywall on top of a guardrail that's known to be the weak link
 is the wrong order. Make the core safe, then charge for it.

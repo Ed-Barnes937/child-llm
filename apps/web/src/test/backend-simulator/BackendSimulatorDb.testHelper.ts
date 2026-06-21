@@ -20,6 +20,7 @@ export interface MockChild {
   username: string;
   passwordHash: string;
   pinHash: string;
+  mustChangePassword: boolean;
   presetName: PresetName;
 }
 
@@ -159,10 +160,40 @@ export class BackendSimulatorDb {
       username,
       passwordHash: username, // tracer bullet: password = username
       pinHash: data.pin,
+      mustChangePassword: true, // default credential must be changed (6.5.11)
       presetName: data.presetName,
     };
     this.children.push(child);
     return child;
+  };
+
+  // Mirrors handleChangeChildPassword: only valid while the flag is set, and
+  // proven by the credential the child just logged in with.
+  changeChildPassword = (data: {
+    childId: string;
+    newPassword: string;
+    password?: string;
+    pin?: string;
+  }): MockChild | { error: string } => {
+    const child = this.findChildById(data.childId);
+    if (!child) return { error: "Child not found." };
+    if (!child.mustChangePassword)
+      return { error: "Password has already been set." };
+
+    const proven =
+      child.passwordHash === data.password || child.pinHash === data.pin;
+    if (!proven) return { error: "We couldn't verify it was you. Try again." };
+
+    child.passwordHash = data.newPassword;
+    child.mustChangePassword = false;
+    return child;
+  };
+
+  // Test helper: mark a seeded child as having already set a real password, so
+  // it can log in without the forced-change flow.
+  markPasswordChanged = (childId: string): void => {
+    const child = this.findChildById(childId);
+    if (child) child.mustChangePassword = false;
   };
 
   getChildrenByParent = (parentId: string): MockChild[] => {

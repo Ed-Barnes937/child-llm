@@ -99,6 +99,20 @@ test.describe("Flagged Conversations Screen", () => {
     // Check topics
     await expect(page.getByTestId("flag-topic")).toHaveCount(1);
     await expect(page.getByText("death")).toBeVisible();
+
+    // Honest disclosure copy is present (6.5.9)
+    await expect(page.getByTestId("safety-disclosure")).toBeVisible();
+    await expect(page.getByText("No safety system is perfect.")).toBeVisible();
+
+    // Each flag plainly states whether the reply reached the child (6.5.9):
+    // the sensitive flag was shown; the blocked + validation-failed were not.
+    const outcomes = page.getByTestId("flag-outcome");
+    await expect(
+      outcomes.filter({ hasText: "Shown to your child" }),
+    ).toHaveCount(1);
+    await expect(
+      outcomes.filter({ hasText: "Blocked before your child saw it" }),
+    ).toHaveCount(2);
   });
 
   test("filtering by child shows only that child's flags", async ({

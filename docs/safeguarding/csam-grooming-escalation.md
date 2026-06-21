@@ -3,7 +3,7 @@
 **Status:** Draft — **NOT YET COUNSEL-REVIEWED. Do not treat as live policy until signed off (see [§9](#9-counsel-sign-off--gating)).**
 **Scope:** NOW tier — UK launch, text-only, one-to-one child↔AI chat.
 **Owner:** Designated Safeguarding Lead (see [§2](#2-the-named-owner)).
-**Implements:** Phase 6.5 item **6.5.8** (mandatory). **Governed by [ADR-0007](../decisions/ADR-LOG.md#adr-0007--uk-launch-is-out-of-osa-user-to-user-scope-while-text-only-and-one-to-one)** and recorded as **[ADR-0008](../decisions/ADR-LOG.md#adr-0008--documented-manual-grooming--csam-escalation-path-now-tier)**.
+**Implements:** Phase 6.5 item **6.5.8** (mandatory). **Governed by [ADR-0007](../decisions/ADR-LOG.md#adr-0007--uk-launch-is-out-of-osa-user-to-user-scope-while-text-only-and-one-to-one)** and recorded as **[ADR-0009](../decisions/ADR-LOG.md#adr-0009--documented-manual-grooming--csam-escalation-path-now-tier)**.
 
 > **This is not legal advice.** It is an operational runbook. The underlying scope
 > determination (ADR-0007) and this path must both be reviewed by counsel before launch.

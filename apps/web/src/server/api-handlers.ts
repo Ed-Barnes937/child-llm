@@ -13,6 +13,12 @@ import {
 import { eq, desc, inArray, count } from "drizzle-orm";
 import { hashSecret, verifySecret } from "./password";
 import {
+  evaluateChatRequest,
+  evaluatePinAttempt,
+  recordEvent,
+  pruneOldEvents,
+} from "./behavioural-limits";
+import {
   PRESET_DEFINITIONS,
   type PresetName,
   type PresetSliders,
@@ -152,6 +158,7 @@ export const handleChildLoginWithPassword = async (data: {
       username: child.username,
       presetName: child.presetName as PresetName,
       parentId: child.parentId,
+      mustChangePassword: child.mustChangePassword,
     },
   };
 };
@@ -169,8 +176,23 @@ export const handleChildLoginWithPin = async (data: {
     .limit(1);
 
   if (!child) return { error: "Child not found." };
-  if (!child.pinHash || !verifySecret(data.pin, child.pinHash))
+
+  // PIN brute-force lockout (6.5.6, carried forward from plan item 9.5).
+  const pinVerdict = await evaluatePinAttempt(db, { childId: data.childId });
+  if (pinVerdict.locked) {
+    return {
+      error: "Too many incorrect PIN attempts. Please try again later.",
+    };
+  }
+
+  if (!child.pinHash || !verifySecret(data.pin, child.pinHash)) {
+    await recordEvent(db, {
+      kind: "pin_fail",
+      childId: data.childId,
+      deviceToken: data.deviceToken,
+    });
     return { error: "Incorrect PIN." };
+  }
 
   return {
     child: {
@@ -179,6 +201,71 @@ export const handleChildLoginWithPin = async (data: {
       username: child.username,
       presetName: child.presetName as PresetName,
       parentId: child.parentId,
+      mustChangePassword: child.mustChangePassword,
+    },
+  };
+};
+
+// Minimum length for a child-chosen password. The only credential before this
+// point is the username (the temp default), so any real password is an
+// improvement; this just stops a trivially short one.
+const MIN_PASSWORD_LENGTH = 6;
+
+// Forces the first-login password change required by 6.5.11. Identity is proven
+// with the credential the child just authenticated with (their temp password or
+// their PIN) — there is no child session token in this architecture. The change
+// is only allowed while `mustChangePassword` is set, so this endpoint cannot be
+// used to overwrite an established child's password.
+export const handleChangeChildPassword = async (data: {
+  childId: string;
+  newPassword: string;
+  password?: string;
+  pin?: string;
+}) => {
+  const db = getDb();
+  const [child] = await db
+    .select()
+    .from(children)
+    .where(eq(children.id, data.childId))
+    .limit(1);
+
+  if (!child) return { error: "Child not found." };
+  if (!child.mustChangePassword)
+    return { error: "Password has already been set." };
+
+  const proven =
+    verifySecret(data.password ?? "", child.passwordHash) ||
+    (child.pinHash !== null && verifySecret(data.pin ?? "", child.pinHash));
+  if (!proven) return { error: "We couldn't verify it was you. Try again." };
+
+  if (
+    typeof data.newPassword !== "string" ||
+    data.newPassword.length < MIN_PASSWORD_LENGTH
+  ) {
+    return {
+      error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`,
+    };
+  }
+  if (data.newPassword === child.username) {
+    return { error: "Pick a password that isn't your username." };
+  }
+
+  await db
+    .update(children)
+    .set({
+      passwordHash: hashSecret(data.newPassword),
+      mustChangePassword: false,
+    })
+    .where(eq(children.id, child.id));
+
+  return {
+    child: {
+      id: child.id,
+      displayName: child.displayName,
+      username: child.username,
+      presetName: child.presetName as PresetName,
+      parentId: child.parentId,
+      mustChangePassword: false,
     },
   };
 };
@@ -219,9 +306,11 @@ export const handleGetChildConfig = async (childId: string) => {
     .from(calibrationAnswers)
     .where(eq(calibrationAnswers.childId, childId));
 
+  // Safe by default (6.5.9): if a child somehow has no preset row, fall back
+  // to the strictest preset rather than the middle one.
   const defaults = preset
     ? undefined
-    : PRESET_DEFINITIONS["confident-reader"].sliders;
+    : PRESET_DEFINITIONS["early-learner"].sliders;
 
   return {
     sliders: preset
@@ -246,10 +335,45 @@ export const handleGetChildConfig = async (childId: string) => {
 export const handleChatStream = async (data: {
   message: string;
   presetName: string;
+  childId?: string;
+  deviceToken?: string;
   sliders?: PresetSliders;
   calibrationAnswers?: CalibrationAnswer[];
   history: { role: string; content: string }[];
 }) => {
+  // Behavioural rate / velocity / device-reputation gate (6.5.6). Keyed on the
+  // child session; skipped only for legacy callers that don't send a childId.
+  if (data.childId) {
+    const db = getDb();
+    const verdict = await evaluateChatRequest(db, {
+      childId: data.childId,
+      deviceToken: data.deviceToken,
+    });
+    if (verdict.throttled) {
+      await recordEvent(db, {
+        kind: "rate_violation",
+        childId: data.childId,
+        deviceToken: data.deviceToken,
+      });
+      return new Response(JSON.stringify({ error: verdict.message }), {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": String(verdict.retryAfterSeconds),
+        },
+      });
+    }
+    await recordEvent(db, {
+      kind: "message",
+      childId: data.childId,
+      deviceToken: data.deviceToken,
+    });
+    await pruneOldEvents(db, {
+      childId: data.childId,
+      deviceToken: data.deviceToken,
+    });
+  }
+
   const pipelineUrl = process.env.PIPELINE_URL ?? "http://localhost:3001";
   const pipelineKey = getPipelineApiKey();
 
@@ -375,6 +499,7 @@ export const handleCreateFlag = async (data: {
   childMessage?: string;
   aiResponse?: string;
   topics?: string[];
+  deviceToken?: string;
 }) => {
   const db = getDb();
   const [flag] = await db
@@ -390,6 +515,16 @@ export const handleCreateFlag = async (data: {
       topics: data.topics ? JSON.stringify(data.topics) : null,
     })
     .returning();
+
+  // Repeated-probe / device-reputation signal (6.5.6): a guardrail flag is a
+  // probe. "reported" is a child-initiated report, not a probe, so it's excluded.
+  if (data.type !== "reported") {
+    await recordEvent(db, {
+      kind: "probe",
+      childId: data.childId,
+      deviceToken: data.deviceToken,
+    });
+  }
 
   return { id: flag.id };
 };
