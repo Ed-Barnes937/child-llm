@@ -196,3 +196,32 @@ does not affect it; it limits the *compliance surface* to the UK.
 user reaches the product. VPN users can still bypass geo-IP — accepted as reasonable-measures,
 not a guarantee. The moment we intentionally open another market, ADR-0007 must be re-run for
 that jurisdiction *before* access is granted. Lawyer-reviewed alongside 6.5.8 / 6.5.12.
+
+---
+
+## ADR-0009 — Documented manual grooming / CSAM escalation path (NOW tier)
+
+- **Status:** Proposed *(pending counsel sign-off — see consequences)*
+- **Date:** 2026-06-21
+
+**Context.** Phase 6.5 item 6.5.8 is mandatory and must **never** rest on the general LLM
+judge. [ADR-0007](#adr-0007--uk-launch-is-out-of-osa-user-to-user-scope-while-text-only-and-one-to-one)
+determined the text-only, one-to-one UK launch is outside the OSA user-to-user regime, so
+the NOW-tier deliverable is a *documented manual escalation + safe-handling path*, not an
+NCA CSEA-IRP / IWF reporting integration (those are the GATED tier).
+
+**Decision.** Adopt a documented manual escalation & safe-handling runbook
+([`safeguarding/csam-grooming-escalation.md`](../safeguarding/csam-grooming-escalation.md)),
+owned by a named **Designated Safeguarding Lead** (never an LLM, never the validation judge).
+Grooming/CSAM signals surface through the existing flag pipeline + human reports and are
+triaged manually by the DSL, who owns the reporting decision via UK public routes
+(999/101, CEOP/NCA, MASH/NSPCC). No new detector, flag type, or reporting integration is
+built at NOW tier. The two ADR-0007 triggers (user-to-user feature; media upload / image
+generation) pull the full regime forward before they reach users.
+
+**Consequences.** Lightest compliant lift for a text-only 1:1 launch; the human-in-the-loop
+is explicit and decorrelated from the automated stack. **Gating:** the runbook is *not live*
+until (a) counsel reviews it and ADR-0007, (b) the parents-view-conversations edge is
+confirmed against the user-to-user test, and (c) the DSL/deputy/counsel placeholders are
+filled with named people. **The introducing PR must not be self-merged — it requires human
+legal review.** Not legal advice.
