@@ -15,6 +15,13 @@ describe("R3 Llama Guard parsing (6.5.2)", () => {
     expect(result.reason).toContain("S1");
   });
 
+  it("captures category codes when returned on the same line as 'unsafe'", () => {
+    const result = parseLlamaGuardResponse("unsafe S1");
+    expect(result.safe).toBe(false);
+    expect(result.categories).toEqual(["S1"]);
+    expect(result.reason).toContain("S1");
+  });
+
   it("handles 'unsafe' with no category line", () => {
     const result = parseLlamaGuardResponse("unsafe");
     expect(result.safe).toBe(false);

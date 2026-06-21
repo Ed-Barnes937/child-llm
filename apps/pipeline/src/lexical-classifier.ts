@@ -41,51 +41,61 @@ interface Feature {
 // summed feature weight reaches THRESHOLD. Patterns run against a *lowercased
 // canonicalised scan copy* (homoglyphs folded, zero-width stripped, emoji mapped
 // to words, de-leeted), so obfuscated variants score the same as plain text.
+//
+// As one decorrelated vote among three (plus the R2 blocklist), R4 is tuned for
+// *precision*, not recall: under the "any disagreement → unsafe" rule a false
+// positive silently blocks a legitimate reply and emits a false parent flag, so
+// each pattern targets phrasing that is high-signal in isolation. Innocent
+// look-alikes ("cut myself shaving", "where do baby birds come from", "made to
+// feel welcome") are regression-tested in lexical-classifier.test.ts.
 const CATEGORY_FEATURES: Record<string, Feature[]> = {
   "self-harm": [
-    // Direct act against oneself ("knife myself", "kill myself", "cut myself").
+    // Lethal/violent act directed at oneself. "cut"/"hurt" are deliberately
+    // excluded — "cut myself shaving", "hurt myself playing" are overwhelmingly
+    // innocent and need intent context this layer doesn't model.
     {
       pattern:
-        /\b(?:kill|hurt|harm|cut|knife|stab|end|burn|choke)\s+(?:myself|yourself|himself|herself|themselves|herself)\b/,
+        /\b(?:kill|knife|stab|hang|strangle|suffocate|drown)\s+(?:myself|himself|herself|themselves)\b/,
       weight: 1,
     },
-    // Wanting to perform the act ("want to end it", "wanting to hurt myself").
+    // Not wanting to be alive — requires the terminal "anymore", so "don't want
+    // to live in the city" / "don't want to be here yet" do not match.
     {
       pattern:
-        /\bwant(?:ing)?\s+to\s+(?:kill|hurt|harm|cut|knife|stab|end|disappear|die)\b/,
+        /\b(?:don'?t|do\s+not|dont)\s+want\s+to\s+(?:be\s+here|live|be\s+alive|exist|wake\s+up|go\s+on)\s+(?:any\s?more)\b/,
       weight: 1,
     },
-    // Euphemistic ideation that dodges the sensitive-topic keyword patterns.
+    { pattern: /\bwant\s+to\s+be\s+dead\b/, weight: 1 },
+    { pattern: /\b(?:end|take)\s+(?:my\s+own\s+life|my\s+life)\b/, weight: 1 },
+    { pattern: /\bend\s+it\s+all\b/, weight: 1 },
+    // "no point in living" but not "...living without ice cream" (idiom).
     {
       pattern:
-        /\b(?:don'?t|do\s+not|dont)\s+want\s+to\s+(?:be\s+here|live|exist|wake\s+up|go\s+on)\b/,
+        /\bno\s+(?:point|reason)\s+(?:in\s+)?(?:living|being\s+alive)\b(?!\s+without)/,
       weight: 1,
     },
-    { pattern: /\bnot\s+want\s+to\s+be\s+here\s+anymore\b/, weight: 1 },
-    { pattern: /\bend\s+(?:it\s+all|my\s+life)\b/, weight: 1 },
-    { pattern: /\bno\s+(?:point|reason)\s+(?:in\s+)?living\b/, weight: 1 },
   ],
   "sexual-reproduction": [
-    // "Where do babies come from" and its framed variants.
-    {
-      pattern: /\bwhere\s+do\s+(?:babies|baby)\b[\s\S]*\bcome\s+from\b/,
-      weight: 1,
-    },
-    // Reproduction wrapped in a story ("how new little ones are created/made").
+    // The reproductive "where do babies come from" question. No gap between the
+    // subject and "come from", so "where do baby birds come from" (the bird is
+    // the subject, not reproduction) does not match.
     {
       pattern:
-        /\b(?:little\s+ones|babies|new\s+life|new\s+little\s+ones)\b[\s\S]{0,40}\b(?:created|made|come\s+from|are\s+born)\b/,
+        /\bwhere\s+do\s+(?:babies|baby)\s+(?:actually\s+|really\s+)?come\s+from\b/,
       weight: 1,
     },
+    // Reproduction framed as a story ("how new little ones are created/born").
+    // Only "created"/"born" — "made" is excluded because "little ones are made
+    // to feel welcome" / "babies made out of dough" are innocent.
     {
       pattern:
-        /\bhow\s+(?:are|do)\s+(?:babies|little\s+ones)\b[\s\S]{0,30}\b(?:made|created|come)\b/,
+        /\b(?:new\s+)?little\s+ones\s+(?:are|were|get)\s+(?:created|born)\b/,
       weight: 1,
     },
   ],
   "sexual-explicit": [
     { pattern: /\b(?:nsfw|x-?rated|porn(?:ographic|o)?)\b/, weight: 1 },
-    { pattern: /18\+/, weight: 1 },
+    { pattern: /\b18\+\s*(?:content|only|material)\b/, weight: 1 },
     {
       pattern:
         /\bshow\s+me\s+(?:some\s+)?(?:adult|sexual|explicit)\s+(?:content|pictures|images|videos)\b/,

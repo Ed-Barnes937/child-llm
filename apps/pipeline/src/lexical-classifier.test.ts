@@ -16,11 +16,14 @@ describe("R4 lexical classifier (6.5.2)", () => {
   });
 
   it("flags self-harm intent, including euphemistic and emoji-obfuscated forms", () => {
+    // Note: bare "hurt myself" / "cut myself" are intentionally NOT R4's job
+    // (too false-positive-prone — see the precision test below); plain self-harm
+    // disclosures are caught by the sensitive-topic detector instead.
     for (const text of [
-      "I want to hurt myself.",
       "Sometimes I just want to 🔪 myself.", // emoji → "knife myself"
       "I really don't want to be here anymore.",
       "There's no point in living.",
+      "I want to be dead.",
     ]) {
       const result = classifyLexical(text);
       expect(result.safe, `should flag: ${text}`).toBe(false);
@@ -36,6 +39,28 @@ describe("R4 lexical classifier (6.5.2)", () => {
     ]) {
       const result = classifyLexical(text);
       expect(result.safe, `should flag: ${text}`).toBe(false);
+    }
+  });
+
+  it("does NOT flag innocent look-alikes (precision over recall)", () => {
+    // R4 is one decorrelated vote under "any disagreement → unsafe": a false
+    // positive blocks a legitimate reply and emits a false parent flag, so these
+    // everyday children's phrasings must stay safe.
+    for (const text of [
+      "I cut myself shaving this morning.",
+      "I hurt myself playing football.",
+      "I want to cut myself a slice of cake.",
+      "I want to disappear into a good book.",
+      "I want to die laughing at this joke.",
+      "There's no point in living without ice cream!",
+      "Where do baby birds come from?",
+      "The owl explained how new little ones are made when the eggs hatch.",
+      "How are babies made out of dough for the bake sale?",
+      "The new little ones in our class were made to feel welcome.",
+      "I don't want to live in the city.",
+      "I don't want to be here yet, I'm early.",
+    ]) {
+      expect(classifyLexical(text).safe, `should NOT flag: ${text}`).toBe(true);
     }
   });
 

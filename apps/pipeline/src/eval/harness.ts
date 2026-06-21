@@ -51,6 +51,13 @@ export const runDeterministicGuardrails = (
   if (detectSensitiveTopics(testCase.input).isSensitive) {
     caughtBy.push("sensitive-topics");
   }
+  // R4 is an output-path classifier: in the pipeline it scans the *model
+  // output* (index.ts Step 6), not the child input. The harness scores it on
+  // the case text exactly as it scores the output-path R2 blocklist — i.e. the
+  // text stands in as candidate model output. So a "caught" here means R4
+  // catches that content *in a response*; intercepting the disguised child
+  // *input* before generation is an input-path concern (6.5.1 / sensitive
+  // topics), outside 6.5.2's output-validation scope.
   if (!classifyLexical(testCase.input).safe) {
     caughtBy.push("lexical-classifier");
   }

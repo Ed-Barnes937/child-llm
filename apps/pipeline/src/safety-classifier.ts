@@ -40,13 +40,13 @@ export const parseLlamaGuardResponse = (
     return { safe: true, categories: [], reason: "Llama Guard: safe" };
   }
 
-  if (firstLine === "unsafe") {
-    const categories = trimmed
-      .split(/\r?\n/)
-      .slice(1)
-      .join(",")
-      .split(/[,\s]+/)
-      .filter(Boolean);
+  if (firstLine.startsWith("unsafe")) {
+    // Llama Guard 3 normally returns the codes on the line after "unsafe", but
+    // tolerate same-line variants ("unsafe S1") too. Collect S-codes from the
+    // whole response so the parent-facing reason keeps the category.
+    const categories = [...trimmed.matchAll(/\bS\d+\b/gi)].map((m) =>
+      m[0].toUpperCase(),
+    );
     return {
       safe: false,
       categories,
