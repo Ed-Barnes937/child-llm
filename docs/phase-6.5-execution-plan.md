@@ -28,16 +28,16 @@ exists to escape. The harness is the substrate; everything else builds on it.
 |-------|-------|---------------|---------------|
 | **A · Foundation** (serial, first) | 6.5.3 harness → 6.5.1 canonicalisation | shared scan-path / CI | **One focused session, sequential.** Not parallelisable — everything builds on these. |
 | **B · Validation cluster** (serial chain) | 6.5.2 classifiers → 6.5.7 injection shield → 6.5.5 crescendo | all edit the same validation / pipeline code | **One session as a PR chain** (merge upstream-into-downstream). Parallelising these = conflicts + unverifiable interactions. |
-| **C · Independent infra** (true parallel) | 6.5.6 rate-limit middleware · 6.5.9 safe-default presets · 6.5.11 force password change · 6.5.8 CSAM docs | different subsystems, no overlap | **Separate sessions in separate git worktrees**, each branched off `main`, each its own PR. This is where parallelism pays. |
+| **C · Independent infra** (true parallel) | 6.5.6 rate-limit middleware · 6.5.9 safe-default presets · 6.5.11 force password change · 6.5.8 CSAM docs · 6.5.12 UK-only access | different subsystems, no overlap | **Separate sessions in separate git worktrees**, each branched off `main`, each its own PR. This is where parallelism pays. |
 
 **Why B must be serial:** 6.5.2, 6.5.5, and 6.5.7 all reach into the same validation flow.
 Running them as parallel sessions buys merge conflicts and three agents who can't see each
 other's changes to the thing they're all modifying. Chain them, each PR rebased on the prior
 and verified against the 6.5.3 harness.
 
-**Why C can be parallel:** rate-limit middleware, preset defaults, the auth flow, and the
-CSAM docs touch disjoint parts of the codebase. Separate worktrees won't collide on merge;
-each branches off `main` independently (no chain needed).
+**Why C can be parallel:** rate-limit middleware, preset defaults, the auth flow, the CSAM
+docs, and the UK-only edge/signup control touch disjoint parts of the codebase. Separate
+worktrees won't collide on merge; each branches off `main` independently (no chain needed).
 
 ---
 
@@ -61,14 +61,16 @@ each branches off `main` independently (no chain needed).
 
 ## Where hands-off has to stop
 
-Two human gates are non-negotiable here, regardless of how green CI is:
+Human gates are non-negotiable here, regardless of how green CI is:
 
-- **6.5.8 — legal / scope sign-off.** ADR-0007's "confirm the parent-visibility edge with
-  counsel" cannot be self-certified by an agent. Hard stop for a human.
+- **6.5.8 + 6.5.12 — the legal-posture gate.** ADR-0007's "confirm the parent-visibility edge
+  with counsel" and ADR-0008's UK-only enforcement together back the whole compliance basis;
+  neither can be self-certified by an agent, and both must be lawyer-reviewed. Hard stop for a
+  human, and hard launch-blockers.
 - **Track B merges (6.5.2 / 6.5.5 / 6.5.7).** A regression here is a child-safety regression,
   not a bug. Let the harness gate them, but keep a hand on the merge button.
 
-The Track C infra PRs (6.5.11, 6.5.6, 6.5.9) are fine to auto-merge once green.
+The remaining Track C infra PRs (6.5.11, 6.5.6, 6.5.9) are fine to auto-merge once green.
 
 ---
 
