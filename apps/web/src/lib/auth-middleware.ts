@@ -334,6 +334,17 @@ export const serverMiddleware = (): Plugin => {
               return;
             }
 
+            if (req.url.startsWith("/api/child-auth/change-password")) {
+              const data = JSON.parse(body);
+              const result = await handlers.handleChangeChildPassword(data);
+              if ("error" in result) {
+                res.statusCode = 400;
+              }
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(result));
+              return;
+            }
+
             if (req.url.startsWith("/api/child-auth/device-children")) {
               const deviceToken = url.searchParams.get("deviceToken");
               if (!deviceToken) {

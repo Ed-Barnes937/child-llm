@@ -1,4 +1,5 @@
 import type {
+  ChildChangePasswordRequest,
   ChildLoginPasswordRequest,
   ChildLoginPinRequest,
   ChildLoginResponse,
@@ -21,6 +22,17 @@ export const childAuthApi = {
     data: ChildLoginPinRequest,
   ): Promise<ChildLoginResponse> => {
     const res = await fetch("/api/child-auth/login-pin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return res.json();
+  },
+
+  changePassword: async (
+    data: ChildChangePasswordRequest,
+  ): Promise<ChildLoginResponse> => {
+    const res = await fetch("/api/child-auth/change-password", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
