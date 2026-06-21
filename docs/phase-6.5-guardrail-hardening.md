@@ -110,7 +110,9 @@ none mean abandoning the current setup. Each item states its success check.
     overrides.
   - **Verify:** known injection strings in the trick set are caught pre-generation.
 
-- [ ] **6.5.8** Grooming / CSAM escalation path + human-in-the-loop — *mandatory*
+- [x] **6.5.8** Grooming / CSAM escalation path + human-in-the-loop — *mandatory*
+      *(NOW-tier docs drafted — see [`safeguarding/csam-grooming-escalation.md`](safeguarding/csam-grooming-escalation.md)
+      and ADR-0008; **counsel sign-off still required before this is live**.)*
   - This category must **never** rest on the general judge. Route to dedicated detection,
     a clear reporting process, and a person in the loop.
   - **UK scope finding (2026-06-20, see ADR-0007).** A one-to-one, text-only child↔AI chat
