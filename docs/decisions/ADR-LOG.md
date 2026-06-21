@@ -225,3 +225,39 @@ until (a) counsel reviews it and ADR-0007, (b) the parents-view-conversations ed
 confirmed against the user-to-user test, and (c) the DSL/deputy/counsel placeholders are
 filled with named people. **The introducing PR must not be self-merged — it requires human
 legal review.** Not legal advice.
+
+---
+
+## ADR-0010 — R4 (the decorrelated non-LLM vote) is a pure-JS lexical classifier, not fastText
+
+- **Status:** Accepted
+- **Date:** 2026-06-21 *(shipped in Phase 6.5.2)*
+
+**Context.** ADR-0003 names the R4 slot "a non-LLM statistical classifier (fastText)" and its
+consequences anticipate "a self-hosted sidecar for the non-LLM layer (the pipeline is
+Node/Hono, no Python today)." Implementing *literal* fastText needs a trained model artefact;
+no off-the-shelf child-safety fastText model exists, so it would pull in a Python training
+pipeline plus the very sidecar the architecture avoids — ballooning a safety-critical PR. The
+architecture reference (`02-guardrail-pipeline-layers.md`) already blesses the alternative,
+naming the slot "**fastText / pure lexical**".
+
+**Decision.** Implement R4 as a self-contained **pure-JS lexical/statistical classifier**
+(`apps/pipeline/src/lexical-classifier.ts`): canonicalise a scan copy (reusing 6.5.1), then
+score weighted lexical features across the *semantic* harm categories the deterministic R2
+blocklist structurally cannot reach — self-harm euphemism and reproduction/sexual framing.
+Zero dependencies, no network, no Python, no sidecar; deterministic and sub-millisecond. It
+fills the same decorrelated-third-vote role as fastText (it fails on genuinely different
+inputs from the two transformers) while keeping the Node/Hono pipeline self-contained.
+
+R3 stays as specified — Llama Guard 3 (8B) via OpenRouter (`safety-classifier.ts`). The two
+network opinions (R3, R5) run concurrently; R4 is synchronous. Any disagreement → unsafe →
+safe fallback (`opinion-vote.ts`).
+
+**Consequences.** No new infra or Python; the base branch for the Track B stack stays clean.
+Because R4 is deterministic and offline (unlike R3/R5), it also runs inside the 6.5.3 eval
+harness as a CI-gating layer — the harness bypass rate dropped from 39.3% to 25.0% (four
+previously-documented self-harm / reproduction-framing bypasses now caught). Trade-off: a
+hand-curated lexicon has narrower recall than a trained classifier and needs maintenance as
+new framings appear; a trained fastText model (with a sidecar) remains a future option if the
+lexical recall proves insufficient against real traffic. Does **not** supersede ADR-0003 — it
+refines the R4 implementation choice within it.

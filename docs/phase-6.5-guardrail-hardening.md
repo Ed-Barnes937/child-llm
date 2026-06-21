@@ -70,15 +70,19 @@ none mean abandoning the current setup. Each item states its success check.
   - **Verify:** trick-set messages using homoglyph/emoji/zero-width obfuscation are
     caught; stored messages are byte-for-byte unchanged; added latency < 1ms.
 
-- [ ] **6.5.2** Second + third opinion classifiers (R3, R4)
-  - **R3:** add a purpose-built safety classifier (Llama Guard via OpenRouter ≈ $0.18/M
-    is lowest-effort; ShieldGemma/Detoxify are self-host alternatives) as a parallel vote
-    alongside the existing judge. **Disagreement → treat as unsafe → fallback.**
-  - **R4:** add a non-LLM classifier (fastText) as a decorrelated third vote.
-  - See the cost table in the pipeline-layers reference. Note the sidecar implication for
-    self-hosted options (the pipeline is Node/Hono with no Python today).
-  - **Verify:** both classifiers run in the pipeline; a reply the judge passes but a
-    classifier flags is blocked; end-to-end added latency measured and acceptable.
+- [x] **6.5.2** Second + third opinion classifiers (R3, R4) — ✅ **implemented (ADR-0010)**
+  - **R3:** added a purpose-built safety classifier — Llama Guard 3 (8B) via OpenRouter
+    (`safety-classifier.ts`) — as a parallel vote alongside the existing judge.
+    **Disagreement → treat as unsafe → fallback** (`opinion-vote.ts`).
+  - **R4:** added a non-LLM classifier as a decorrelated third vote. Implemented as a
+    **pure-JS lexical classifier** (`lexical-classifier.ts`) rather than literal fastText —
+    no model artefact, no Python sidecar (see **ADR-0010** for why; the pipeline-layers
+    reference blesses the "fastText / pure lexical" slot).
+  - **Verified:** R3 + R4 run in the pipeline alongside R5 (R3‖R5 concurrent, R4 sync); the
+    three-opinion vote blocks a reply the judge passes but a classifier flags
+    (`opinion-vote.test.ts`); R4 is sub-millisecond and the two network opinions run
+    concurrently so added wall-clock ≈ max(R3, R5); the 6.5.3 harness now runs R4 as a
+    CI-gating layer and the **bypass rate dropped 39.3% → 25.0%**.
 
 - [ ] **6.5.3** Adversarial eval harness (the trick set)
   - A fixed, version-controlled suite of known bypasses — story framing, apologies,

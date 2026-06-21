@@ -4,12 +4,16 @@
  * Runs the trick set against the pipeline's *deterministic* guardrails and
  * reports a bypass rate. A case is "caught" if any deterministic layer flags
  * it — mirroring the pipeline's defence-in-depth, where any layer can block or
- * flag. The LLM judge is excluded by design (needs a key, non-deterministic).
+ * flag. The LLM opinions (R5 gpt-4.1-nano judge and R3 Llama Guard) are excluded
+ * by design — both need a key and are non-deterministic, so they cannot gate CI.
+ * The R4 lexical classifier (6.5.2) is non-LLM and deterministic, so it *does*
+ * run here as a CI-gating layer.
  */
 
 import { scanOutput } from "../blocklist.js";
 import { detectSensitiveTopics } from "../sensitive-topics.js";
 import { checkConversationDepth } from "../depth-tracking.js";
+import { classifyLexical } from "../lexical-classifier.js";
 import type { TrickCase } from "./trick-set.js";
 
 export interface CaseResult {
@@ -46,6 +50,9 @@ export const runDeterministicGuardrails = (
   }
   if (detectSensitiveTopics(testCase.input).isSensitive) {
     caughtBy.push("sensitive-topics");
+  }
+  if (!classifyLexical(testCase.input).safe) {
+    caughtBy.push("lexical-classifier");
   }
   if (testCase.history) {
     if (
