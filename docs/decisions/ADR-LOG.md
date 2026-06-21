@@ -165,3 +165,34 @@ COPPA + NCMEC CyberTipline reporting, and EU users pull in the EU AI Act, both o
 require re-assessment. Not legal advice; the scope determination must be lawyer-reviewed
 (tracked in 6.5.8's "now" Verify). Sources: Ofcom chatbot explainer; Ofcom CSEA reporting
 duty guidance; Crime and Policing Act 2026 (Royal Assent 29 Apr 2026); NCA CSEA-IRP; IWF.
+
+**Dependency (added 2026-06-21).** This determination is valid **only while non-UK traffic
+is actively prevented**. The "UK-only" premise is otherwise unenforced — anyone could
+register from anywhere and drag the US/EU regimes above into scope. Enforcement is tracked
+as **6.5.12** and decided in **ADR-0008**; treat the two as a single legal-posture gate.
+
+---
+
+## ADR-0008 — Enforce UK-only access at launch (back the ADR-0007 legal basis)
+
+- **Status:** Accepted
+- **Date:** 2026-06-21
+
+**Context.** ADR-0007's CSAM/CSEA scope analysis assumes a UK-exclusive launch and parks the
+US (COPPA + NCMEC) and EU (AI Act) regimes as "re-assess if those users arrive." Nothing in
+the product currently prevents them from arriving. Basing the legal posture on an unenforced
+boundary is not defensible. Note this is distinct from the OSA user-to-user finding, which
+rests on service architecture (1:1, no sharing) and is geography-independent — geo-restriction
+does not affect it; it limits the *compliance surface* to the UK.
+
+**Decision.** Enforce UK-only access as a **launch-blocker**, using **reasonable measures**
+(the legal standard is reasonable, not perfect — VPN leakage is accepted):
+
+1. **Edge geo-IP block** (Fly.io / Cloudflare) — refuse non-UK requests before the app.
+2. **Country at parent registration** — UK-only, with ToS restricting use to the UK.
+3. *Later, with Phase 7* — **UK billing address** as a third confirmation once payments exist.
+
+**Consequences.** A modest amount of edge + signup work becomes a hard gate before any real
+user reaches the product. VPN users can still bypass geo-IP — accepted as reasonable-measures,
+not a guarantee. The moment we intentionally open another market, ADR-0007 must be re-run for
+that jurisdiction *before* access is granted. Lawyer-reviewed alongside 6.5.8 / 6.5.12.
