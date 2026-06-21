@@ -105,6 +105,8 @@ none mean abandoning the current setup. Each item states its success check.
     PIN brute-force.
   - **Verify:** repeated rapid probing is throttled/flagged; thresholds tuned against real
     traffic, not a paper figure (this layer is medium-confidence — see the reference).
+  - The shipped defaults are placeholders; the tuning process against real traffic is
+    documented in [`phase-6.5.6-rate-limit-tuning.md`](phase-6.5.6-rate-limit-tuning.md).
 
 - [ ] **6.5.7** Prompt-injection shield on input
   - A dedicated detector at the input stage for "ignore your instructions and…" style

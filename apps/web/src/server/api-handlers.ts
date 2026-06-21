@@ -13,6 +13,12 @@ import {
 import { eq, desc, inArray, count } from "drizzle-orm";
 import { hashSecret, verifySecret } from "./password";
 import {
+  evaluateChatRequest,
+  evaluatePinAttempt,
+  recordEvent,
+  pruneOldEvents,
+} from "./behavioural-limits";
+import {
   PRESET_DEFINITIONS,
   type PresetName,
   type PresetSliders,
@@ -169,8 +175,23 @@ export const handleChildLoginWithPin = async (data: {
     .limit(1);
 
   if (!child) return { error: "Child not found." };
-  if (!child.pinHash || !verifySecret(data.pin, child.pinHash))
+
+  // PIN brute-force lockout (6.5.6, carried forward from plan item 9.5).
+  const pinVerdict = await evaluatePinAttempt(db, { childId: data.childId });
+  if (pinVerdict.locked) {
+    return {
+      error: "Too many incorrect PIN attempts. Please try again later.",
+    };
+  }
+
+  if (!child.pinHash || !verifySecret(data.pin, child.pinHash)) {
+    await recordEvent(db, {
+      kind: "pin_fail",
+      childId: data.childId,
+      deviceToken: data.deviceToken,
+    });
     return { error: "Incorrect PIN." };
+  }
 
   return {
     child: {
@@ -246,10 +267,45 @@ export const handleGetChildConfig = async (childId: string) => {
 export const handleChatStream = async (data: {
   message: string;
   presetName: string;
+  childId?: string;
+  deviceToken?: string;
   sliders?: PresetSliders;
   calibrationAnswers?: CalibrationAnswer[];
   history: { role: string; content: string }[];
 }) => {
+  // Behavioural rate / velocity / device-reputation gate (6.5.6). Keyed on the
+  // child session; skipped only for legacy callers that don't send a childId.
+  if (data.childId) {
+    const db = getDb();
+    const verdict = await evaluateChatRequest(db, {
+      childId: data.childId,
+      deviceToken: data.deviceToken,
+    });
+    if (verdict.throttled) {
+      await recordEvent(db, {
+        kind: "rate_violation",
+        childId: data.childId,
+        deviceToken: data.deviceToken,
+      });
+      return new Response(JSON.stringify({ error: verdict.message }), {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json",
+          "Retry-After": String(verdict.retryAfterSeconds),
+        },
+      });
+    }
+    await recordEvent(db, {
+      kind: "message",
+      childId: data.childId,
+      deviceToken: data.deviceToken,
+    });
+    await pruneOldEvents(db, {
+      childId: data.childId,
+      deviceToken: data.deviceToken,
+    });
+  }
+
   const pipelineUrl = process.env.PIPELINE_URL ?? "http://localhost:3001";
   const pipelineKey = getPipelineApiKey();
 
@@ -375,6 +431,7 @@ export const handleCreateFlag = async (data: {
   childMessage?: string;
   aiResponse?: string;
   topics?: string[];
+  deviceToken?: string;
 }) => {
   const db = getDb();
   const [flag] = await db
@@ -390,6 +447,16 @@ export const handleCreateFlag = async (data: {
       topics: data.topics ? JSON.stringify(data.topics) : null,
     })
     .returning();
+
+  // Repeated-probe / device-reputation signal (6.5.6): a guardrail flag is a
+  // probe. "reported" is a child-initiated report, not a probe, so it's excluded.
+  if (data.type !== "reported") {
+    await recordEvent(db, {
+      kind: "probe",
+      childId: data.childId,
+      deviceToken: data.deviceToken,
+    });
+  }
 
   return { id: flag.id };
 };
