@@ -71,6 +71,25 @@ const FlagsPage = () => {
         </Link>
       </div>
 
+      <p className="text-muted-foreground mt-2 text-sm">
+        A record of what the safety checks flagged — and whether each reply was
+        blocked before your child saw it or shown to them.
+      </p>
+
+      <div
+        data-testid="safety-disclosure"
+        className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+      >
+        <p className="font-medium">What this can and can&apos;t do</p>
+        <p className="mt-1">
+          No safety system is perfect. These guardrails lower the risk of unsafe
+          or inappropriate content — they don&apos;t remove it. Some harmful
+          content may still reach your child, and some harmless content may be
+          flagged here. Treat this log as a record to review, not a guarantee,
+          and stay involved in your child&apos;s conversations.
+        </p>
+      </div>
+
       <div className="mt-4">
         <label htmlFor="child-filter" className="sr-only">
           Filter by child

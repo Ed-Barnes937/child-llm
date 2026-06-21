@@ -15,6 +15,26 @@ const FLAG_TYPE_STYLES: Record<
   reported: { label: "Reported", className: "bg-blue-100 text-blue-800" },
 };
 
+/**
+ * Safe-by-default visibility (6.5.9): tell the parent plainly whether the
+ * flagged reply actually reached the child or was held back. Derived from the
+ * flag type — `blocked`/`validation-failed` are replaced with a safe fallback
+ * before the child sees them; `sensitive`/`reported` flag a reply the child
+ * did see.
+ */
+const FLAG_OUTCOMES: Record<
+  FlagDetail["type"],
+  { label: string; reachedChild: boolean }
+> = {
+  blocked: { label: "Blocked before your child saw it", reachedChild: false },
+  "validation-failed": {
+    label: "Blocked before your child saw it",
+    reachedChild: false,
+  },
+  sensitive: { label: "Shown to your child", reachedChild: true },
+  reported: { label: "Shown to your child", reachedChild: true },
+};
+
 interface FlagListItemProps {
   flag: FlagDetail;
   onMarkReviewed: (flagId: string) => void;
@@ -25,6 +45,8 @@ export const FlagListItem = ({ flag, onMarkReviewed }: FlagListItemProps) => {
     label: flag.type,
     className: "bg-gray-100 text-gray-800",
   };
+
+  const outcome = FLAG_OUTCOMES[flag.type];
 
   const parsedTopics: string[] = flag.topics
     ? (() => {
@@ -57,6 +79,18 @@ export const FlagListItem = ({ flag, onMarkReviewed }: FlagListItemProps) => {
             </div>
 
             <p className="mt-1 text-sm">{flag.reason}</p>
+
+            {outcome && (
+              <p
+                data-testid="flag-outcome"
+                className={`mt-1 text-xs font-medium ${
+                  outcome.reachedChild ? "text-amber-700" : "text-green-700"
+                }`}
+              >
+                {outcome.reachedChild ? "⚠ " : "✓ "}
+                {outcome.label}
+              </p>
+            )}
 
             {parsedTopics.length > 0 && (
               <div className="mt-1 flex flex-wrap gap-1">

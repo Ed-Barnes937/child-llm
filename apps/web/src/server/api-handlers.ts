@@ -219,9 +219,11 @@ export const handleGetChildConfig = async (childId: string) => {
     .from(calibrationAnswers)
     .where(eq(calibrationAnswers.childId, childId));
 
+  // Safe by default (6.5.9): if a child somehow has no preset row, fall back
+  // to the strictest preset rather than the middle one.
   const defaults = preset
     ? undefined
-    : PRESET_DEFINITIONS["confident-reader"].sliders;
+    : PRESET_DEFINITIONS["early-learner"].sliders;
 
   return {
     sliders: preset
