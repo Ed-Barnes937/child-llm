@@ -73,6 +73,7 @@ export interface ChatStreamRequest {
   message: string;
   presetName: PresetName;
   childId?: string;
+  deviceToken?: string;
   sliders?: PresetSliders;
   calibrationAnswers?: CalibrationAnswer[];
   history: { role: string; content: string }[];
@@ -159,6 +160,7 @@ export interface CreateFlagRequest {
   childMessage?: string;
   aiResponse?: string;
   topics?: string[];
+  deviceToken?: string;
 }
 
 export interface CreateFlagResponse {

@@ -511,9 +511,18 @@ export const serverMiddleware = (): Plugin => {
 
             const pipelineResponse = await handlers.handleChatStream(data);
 
+            // Non-streaming responses are either a behavioural throttle (429,
+            // 6.5.6) or a pipeline failure. Forward the real status and body so
+            // the throttle reaches the client rather than being masked as 502.
             if (!pipelineResponse.ok || !pipelineResponse.body) {
-              res.statusCode = 502;
-              res.end(JSON.stringify({ error: "Pipeline error" }));
+              res.statusCode = pipelineResponse.status || 502;
+              res.setHeader("Content-Type", "application/json");
+              const retryAfter = pipelineResponse.headers.get("Retry-After");
+              if (retryAfter) res.setHeader("Retry-After", retryAfter);
+              const text = await pipelineResponse
+                .text()
+                .catch(() => JSON.stringify({ error: "Pipeline error" }));
+              res.end(text || JSON.stringify({ error: "Pipeline error" }));
               return;
             }
 

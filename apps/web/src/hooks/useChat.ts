@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { getChildSession, type ChildSession } from "@/lib/child-session";
+import { getDeviceToken } from "@/lib/device-token";
 import { chatApi } from "@/api/chat";
 import { conversationsApi } from "@/api/conversations";
 import type { PresetSliders, CalibrationAnswer } from "@child-safe-llm/shared";
@@ -162,6 +163,7 @@ export const useChat = ({
       childMessage: flag.childMessage,
       aiResponse: flag.aiResponse,
       topics: flag.topics,
+      deviceToken: getDeviceToken() ?? undefined,
     });
   };
 
@@ -219,6 +221,8 @@ export const useChat = ({
         const stream = chatApi.stream({
           message: text,
           presetName: childSessionRef.current?.presetName ?? "confident-reader",
+          childId: childSessionRef.current?.id,
+          deviceToken: getDeviceToken() ?? undefined,
           sliders: sliders ?? undefined,
           calibrationAnswers:
             calibrationAnswers.length > 0 ? calibrationAnswers : undefined,
