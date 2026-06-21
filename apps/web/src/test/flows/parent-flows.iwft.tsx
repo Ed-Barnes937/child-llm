@@ -257,6 +257,9 @@ test.describe("Onboarding calibration flow", () => {
       (c) => c.displayName === "Charlie",
     );
     expect(child).toBeTruthy();
+    // Safe by default (6.5.9): clicking through without picking a preset lands
+    // on the strictest one, not the middle one.
+    expect(child!.presetName).toBe("early-learner");
     const answers = backendSimulator.db.getCalibrationAnswers(child!.id);
     expect(answers).toHaveLength(0);
   });
