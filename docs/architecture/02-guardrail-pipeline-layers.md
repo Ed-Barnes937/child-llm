@@ -38,8 +38,8 @@ sees any of it.
 |---|-------|------|--------|--------------|
 | R1 | **Canonicalise output** | Deterministic | `[add]` | Same normalisation as Q1, so the blocklist can't be slipped past with homoglyphs in the *response*. |
 | R2 | **Hard output blocklist** | Deterministic (regex / lexical) | `[now]` | `obscenity` (profanity/explicit), regex (weapons/drugs/self-harm/URLs/emails), `libphonenumber-js` (phone numbers). Zero false negatives on what it knows; zero generalisation. Non-overridable by the model. |
-| R3 | **Purpose-built safety classifier** | **Fine-tuned LLM / neural** | `[add]` | Second opinion — Llama Guard / ShieldGemma / Detoxify. Trained on a safety taxonomy rather than asked to reason like the gpt-4.1-nano judge. |
-| R4 | **Statistical / lexical classifier** | **Non-LLM** | `[add]` | Third opinion — fastText (genuinely linear, no transformer). Fails on completely different inputs from the two LLMs. |
+| R3 | **Purpose-built safety classifier** | **Fine-tuned LLM / neural** | `[now]` | Second opinion — Llama Guard 3 (8B) via OpenRouter (6.5.2). Trained on a safety taxonomy rather than asked to reason like the gpt-4.1-nano judge. |
+| R4 | **Statistical / lexical classifier** | **Non-LLM** | `[now]` | Third opinion — pure-JS lexical classifier (6.5.2, ADR-0010; the "fastText / pure lexical" slot). Non-transformer, deterministic; fails on completely different inputs from the two LLMs, and gates the 6.5.3 CI harness. |
 | R5 | **LLM-as-judge validation** | Generative LLM | `[now]` | gpt-4.1-nano: "appropriate given these settings?" → APPROPRIATE/INAPPROPRIATE, **fail-closed**. The layer to *stop over-trusting*, not remove. |
 | R6 | **Output sensitive-topic scan** | Regex | `[now]` | Scans the *AI response* for sensitive topics, not just the input. Shipped in PR #19 (#16). |
 | R7 | **Flag-and-forward** | — | `[now]` | sensitive / blocked / validation-failed → flag surfaced to the parent + safe fallback reply to the child. Pipeline emits the event; the web app persists the flag. |

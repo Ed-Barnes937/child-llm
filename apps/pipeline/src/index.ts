@@ -10,9 +10,12 @@ import type {
 } from "@child-safe-llm/shared";
 import { PRESET_DEFINITIONS } from "@child-safe-llm/shared";
 import { scanOutput } from "./blocklist.js";
-import { detectSensitiveTopics } from "./sensitive-topics.js";
+import { detectSensitiveTopics, ESCALATED_PROMPT } from "./sensitive-topics.js";
 import { anchorSafetyContext } from "./context-anchoring.js";
 import { validateResponse } from "./validation.js";
+import { classifyWithLlamaGuard } from "./safety-classifier.js";
+import { classifyLexical } from "./lexical-classifier.js";
+import { voteOutputOpinions } from "./opinion-vote.js";
 import {
   getFallbackResponse,
   createFlagEvent,
@@ -134,7 +137,17 @@ app.post("/chat", (c) => {
     // Check both the child's input and the last AI response — the child
     // may follow up on a sensitive topic using innocuous phrasing while
     // the AI's own reply introduced the sensitive terms.
+    //
+    // Augment the regex detector with the R4 lexical classifier on the input
+    // (6.5.2): R4 catches disguised self-harm / reproduction framing the regex
+    // patterns miss, and its categories ARE sensitive topics — so a hit routes
+    // through the same escalation + parent-flag path (escalated prompt, depth
+    // tracking, "sensitive" flag with the response still shown), not a cold
+    // block. This mirrors how the R2 blocklist runs on both the input (Step 0)
+    // and the output (Step 5); R4 likewise now votes on input here and on the
+    // output in Step 6.
     const childSensitive = detectSensitiveTopics(body.message);
+    const childLexical = classifyLexical(body.message);
     const lastAssistantMsg = body.history
       ?.slice()
       .reverse()
@@ -143,17 +156,20 @@ app.post("/chat", (c) => {
       ? detectSensitiveTopics(lastAssistantMsg.content)
       : null;
     const isSensitive =
-      childSensitive.isSensitive || (responseSensitive?.isSensitive ?? false);
+      childSensitive.isSensitive ||
+      (responseSensitive?.isSensitive ?? false) ||
+      !childLexical.safe;
     const sensitiveTopics = [
       ...new Set([
         ...childSensitive.topics,
         ...(responseSensitive?.topics ?? []),
+        ...(childLexical.safe ? [] : childLexical.categories),
       ]),
     ];
     const escalatedPrompt =
       childSensitive.escalatedPrompt ??
       responseSensitive?.escalatedPrompt ??
-      null;
+      (childLexical.safe ? null : ESCALATED_PROMPT);
 
     // --- Step 1b: Conversation depth check for sensitive topic follow-ups ---
     if (isSensitive && body.history) {
@@ -235,18 +251,46 @@ app.post("/chat", (c) => {
       return;
     }
 
-    // --- Step 6: Validation model call ---
-    const validationResult = await validateResponse(
-      openai,
-      body.message,
-      fullResponse,
-      { presetName: body.presetName, sliders },
+    // --- Step 6: Three-opinion output validation (R5 + R3 + R4) ---
+    // Decorrelated opinions on the same output (ADR-0003): the gpt-4.1-nano
+    // judge (R5), Llama Guard (R3), and the non-LLM lexical classifier (R4).
+    // Any disagreement is treated as unsafe → safe fallback. The two network
+    // opinions run concurrently so the added wall-clock is ~max(R3, R5) rather
+    // than their sum; R4 is deterministic and sub-millisecond.
+    const validationStart = performance.now();
+    const lexicalResult = classifyLexical(fullResponse);
+    const [judgeResult, guardResult] = await Promise.all([
+      validateResponse(openai, body.message, fullResponse, {
+        presetName: body.presetName,
+        sliders,
+      }),
+      classifyWithLlamaGuard(openai, body.message, fullResponse),
+    ]);
+    const vote = voteOutputOpinions([
+      {
+        source: "judge",
+        safe: judgeResult.appropriate,
+        reason: judgeResult.reason,
+      },
+      {
+        source: "llama-guard",
+        safe: guardResult.safe,
+        reason: guardResult.reason,
+      },
+      {
+        source: "lexical",
+        safe: lexicalResult.safe,
+        reason: lexicalResult.reason,
+      },
+    ]);
+    console.log(
+      `Output validation: ${Math.round(performance.now() - validationStart)}ms, safe=${vote.safe}`,
     );
 
-    if (!validationResult.appropriate) {
+    if (!vote.safe) {
       const flagEvent = createFlagEvent(
         "validation-failed",
-        validationResult.reason,
+        vote.reason,
         body.message,
         {
           aiResponse: fullResponse,
