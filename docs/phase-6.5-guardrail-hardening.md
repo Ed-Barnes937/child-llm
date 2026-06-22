@@ -78,6 +78,9 @@ none mean abandoning the current setup. Each item states its success check.
     **pure-JS lexical classifier** (`lexical-classifier.ts`) rather than literal fastText —
     no model artefact, no Python sidecar (see **ADR-0010** for why; the pipeline-layers
     reference blesses the "fastText / pure lexical" slot).
+  - R4 runs on **both paths** (mirroring the R2 blocklist): on the child input as a
+    sensitive-topic signal (Step 1, routed through escalation + parent-flag, not a cold
+    block) and on the model output in the three-opinion vote (Step 6).
   - **Verified:** R3 + R4 run in the pipeline alongside R5 (R3‖R5 concurrent, R4 sync); the
     three-opinion vote blocks a reply the judge passes but a classifier flags
     (`opinion-vote.test.ts`); R4 is sub-millisecond and the two network opinions run

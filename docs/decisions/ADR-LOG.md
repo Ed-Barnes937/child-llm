@@ -256,16 +256,15 @@ safe fallback (`opinion-vote.ts`).
 **Consequences.** No new infra or Python; the base branch for the Track B stack stays clean.
 Because R4 is deterministic and offline (unlike R3/R5), it also runs inside the 6.5.3 eval
 harness as a CI-gating layer — the harness bypass rate dropped from 39.3% to 25.0% (four
-previously-documented self-harm / reproduction-framing bypasses now caught *as the harness
-scores them*). **Honest scoping caveat:** R4 is an output-path classifier (it scans the model
-output, not the child input), and the harness scores it on the trick-set text exactly as it
-scores the output-path R2 blocklist. The four newly-caught cases are content patterns R4
-catches in a *response*; intercepting the disguised *child input* before generation is an
-input-path concern (6.5.1 / sensitive-topics), outside 6.5.2's output-validation scope.
-Because R4 favours precision over recall (a false positive blocks a legitimate reply under
-"any disagreement → unsafe"), bare "hurt/cut myself" and similar are deliberately left to
-other layers. Trade-off: a hand-curated lexicon has narrower recall than a trained classifier
-and needs maintenance as new framings appear; a trained fastText model (with a sidecar)
-remains a future option if lexical recall proves insufficient against real traffic, as does
-mirroring R4 onto the input path (as the R2 blocklist already is). Does **not** supersede
-ADR-0003 — it refines the R4 implementation choice within it.
+previously-documented self-harm / reproduction-framing bypasses now caught). R4 runs on
+**both paths**, mirroring the R2 blocklist: on the child input as a sensitive-topic signal
+(`index.ts` Step 1 — a hit routes through the existing escalation + parent-flag path, not a
+cold block, because its categories *are* sensitive topics) and on the model output in the
+three-opinion vote (Step 6). So the harness scoring R4 on the trick-set text matches
+production on either path. Because R4 favours **precision over recall** (under "any
+disagreement → unsafe" a false positive blocks a legitimate reply / emits a false flag), bare
+"hurt/cut myself" and similar are deliberately left to other layers. Trade-off: a
+hand-curated lexicon has narrower recall than a trained classifier and needs maintenance as
+new framings appear; a trained fastText model (with a sidecar) remains a future option if
+lexical recall proves insufficient against real traffic. Does **not** supersede ADR-0003 —
+it refines the R4 implementation choice within it.

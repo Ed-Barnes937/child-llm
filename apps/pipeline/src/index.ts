@@ -10,7 +10,7 @@ import type {
 } from "@child-safe-llm/shared";
 import { PRESET_DEFINITIONS } from "@child-safe-llm/shared";
 import { scanOutput } from "./blocklist.js";
-import { detectSensitiveTopics } from "./sensitive-topics.js";
+import { detectSensitiveTopics, ESCALATED_PROMPT } from "./sensitive-topics.js";
 import { anchorSafetyContext } from "./context-anchoring.js";
 import { validateResponse } from "./validation.js";
 import { classifyWithLlamaGuard } from "./safety-classifier.js";
@@ -137,7 +137,17 @@ app.post("/chat", (c) => {
     // Check both the child's input and the last AI response — the child
     // may follow up on a sensitive topic using innocuous phrasing while
     // the AI's own reply introduced the sensitive terms.
+    //
+    // Augment the regex detector with the R4 lexical classifier on the input
+    // (6.5.2): R4 catches disguised self-harm / reproduction framing the regex
+    // patterns miss, and its categories ARE sensitive topics — so a hit routes
+    // through the same escalation + parent-flag path (escalated prompt, depth
+    // tracking, "sensitive" flag with the response still shown), not a cold
+    // block. This mirrors how the R2 blocklist runs on both the input (Step 0)
+    // and the output (Step 5); R4 likewise now votes on input here and on the
+    // output in Step 6.
     const childSensitive = detectSensitiveTopics(body.message);
+    const childLexical = classifyLexical(body.message);
     const lastAssistantMsg = body.history
       ?.slice()
       .reverse()
@@ -146,17 +156,20 @@ app.post("/chat", (c) => {
       ? detectSensitiveTopics(lastAssistantMsg.content)
       : null;
     const isSensitive =
-      childSensitive.isSensitive || (responseSensitive?.isSensitive ?? false);
+      childSensitive.isSensitive ||
+      (responseSensitive?.isSensitive ?? false) ||
+      !childLexical.safe;
     const sensitiveTopics = [
       ...new Set([
         ...childSensitive.topics,
         ...(responseSensitive?.topics ?? []),
+        ...(childLexical.safe ? [] : childLexical.categories),
       ]),
     ];
     const escalatedPrompt =
       childSensitive.escalatedPrompt ??
       responseSensitive?.escalatedPrompt ??
-      null;
+      (childLexical.safe ? null : ESCALATED_PROMPT);
 
     // --- Step 1b: Conversation depth check for sensitive topic follow-ups ---
     if (isSensitive && body.history) {

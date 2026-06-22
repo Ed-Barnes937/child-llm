@@ -92,7 +92,7 @@ const SENSITIVE_TOPIC_PATTERNS: TopicPattern[] = [
   },
 ];
 
-const ESCALATED_PROMPT = `ESCALATED SAFETY MODE — the child's message touches a sensitive topic. Apply these additional constraints for this response:
+export const ESCALATED_PROMPT = `ESCALATED SAFETY MODE — the child's message touches a sensitive topic. Apply these additional constraints for this response:
 - Respond briefly and warmly. Do not over-explain or provide more detail than necessary.
 - Be age-appropriate and gentle. Use simple, reassuring language.
 - Where appropriate, suggest the child talks to their parent or a trusted adult: "That's a really important question. Your parent or a grown-up you trust would be a great person to talk to about this."
